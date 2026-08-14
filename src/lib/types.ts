@@ -14,7 +14,7 @@ export type MessageRow = {
   created_at: string;
 };
 
-export type EventCategory = "date" | "anniversaire" | "voyage" | "autre";
+export type EventCategory = "date" | "anniversaire" | "voyage" | "travail" | "autre";
 
 export type EventRow = {
   id: string;
@@ -35,5 +35,39 @@ export type TicTacToeGame = {
   x_name: string;
   o_name: string | null;
   winner: "X" | "O" | "draw" | null;
+  created_at: string;
+};
+
+export type TodoRow = {
+  id: string;
+  content: string;
+  done: boolean;
+  created_by: string;
+  created_at: string;
+};
+
+export type Mood =
+  | "content"
+  | "amoureux"
+  | "fatigue"
+  | "stresse"
+  | "triste"
+  | "en_colere"
+  | "malade"
+  | "zen";
+
+export type StatusRow = {
+  name: string;
+  mood: Mood;
+  updated_at: string;
+};
+
+export type RefRow = {
+  id: string;
+  title: string;
+  link: string | null;
+  media_path: string | null;
+  media_type: "image" | "video" | null;
+  created_by: string;
   created_at: string;
 };
