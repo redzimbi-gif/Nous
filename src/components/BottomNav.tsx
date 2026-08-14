@@ -7,6 +7,7 @@ const TABS = [
   { href: "/chat", label: "Chat", icon: "💬" },
   { href: "/photos", label: "Photos", icon: "📷" },
   { href: "/agenda", label: "Agenda", icon: "📅" },
+  { href: "/jeux", label: "Jeux", icon: "🎮" },
 ];
 
 export default function BottomNav() {

@@ -27,3 +27,13 @@ export type EventRow = {
   created_by: string;
   created_at: string;
 };
+
+export type TicTacToeGame = {
+  id: string;
+  board: string[];
+  turn: "X" | "O";
+  x_name: string;
+  o_name: string | null;
+  winner: "X" | "O" | "draw" | null;
+  created_at: string;
+};
