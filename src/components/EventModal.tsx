@@ -9,6 +9,7 @@ const CATEGORIES: { value: EventCategory; emoji: string; label: string }[] = [
   { value: "date", emoji: "💕", label: "Date" },
   { value: "anniversaire", emoji: "🎂", label: "Anniv" },
   { value: "voyage", emoji: "✈️", label: "Voyage" },
+  { value: "travail", emoji: "💼", label: "Travail" },
   { value: "autre", emoji: "📌", label: "Autre" },
 ];
 
