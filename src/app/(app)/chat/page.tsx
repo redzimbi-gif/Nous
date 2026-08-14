@@ -82,16 +82,29 @@ export default function ChatPage() {
     const content = text.trim();
     if (!content) return;
     setText("");
-    const { data: row, error } = await supabase
-      .from("messages")
-      .insert({ sender_name: name, content })
-      .select()
-      .single();
-    if (error) {
-      alert("Message non envoyé : " + error.message);
-      return;
+    try {
+      const { data: row, error } = await supabase
+        .from("messages")
+        .insert({ sender_name: name, content })
+        .select()
+        .single();
+      if (error) {
+        alert("Message non envoyé (erreur Supabase) :\n" + JSON.stringify(error, null, 2));
+        return;
+      }
+      setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+    } catch (e: any) {
+      alert(
+        "Message non envoyé (exception) :\n" +
+          (e?.message ?? String(e)) +
+          "\n\n--- stack ---\n" +
+          (e?.stack ?? "(pas de stack)") +
+          "\n\n--- nom/contenu ---\nname=" +
+          JSON.stringify(name) +
+          " content=" +
+          JSON.stringify(content)
+      );
     }
-    setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
   }
 
   async function sendPhoto(file: File) {
