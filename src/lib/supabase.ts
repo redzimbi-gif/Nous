@@ -8,6 +8,9 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   realtime: {
     params: { eventsPerSecond: 10 },
   },
+  global: {
+    fetch: (...args: Parameters<typeof fetch>) => fetch(...args),
+  },
 });
 
 export const PHOTOS_BUCKET = "nous-photos";
