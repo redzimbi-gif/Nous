@@ -44,13 +44,18 @@ export default function PhotosPage() {
     setUploading(true);
     for (const file of Array.from(files)) {
       const path = `${crypto.randomUUID()}-${file.name}`;
-      const { error } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from(PHOTOS_BUCKET)
         .upload(path, file);
-      if (!error) {
-        await supabase
-          .from("photos")
-          .insert({ storage_path: path, sender_name: name });
+      if (uploadError) {
+        alert("Photo non envoyée : " + uploadError.message);
+        continue;
+      }
+      const { error: insertError } = await supabase
+        .from("photos")
+        .insert({ storage_path: path, sender_name: name });
+      if (insertError) {
+        alert("Photo non enregistrée : " + insertError.message);
       }
     }
     setUploading(false);

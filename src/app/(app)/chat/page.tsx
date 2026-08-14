@@ -82,7 +82,16 @@ export default function ChatPage() {
     const content = text.trim();
     if (!content) return;
     setText("");
-    await supabase.from("messages").insert({ sender_name: name, content });
+    const { data: row, error } = await supabase
+      .from("messages")
+      .insert({ sender_name: name, content })
+      .select()
+      .single();
+    if (error) {
+      alert("Message non envoyé : " + error.message);
+      return;
+    }
+    setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
   }
 
   async function sendPhoto(file: File) {
@@ -91,17 +100,31 @@ export default function ChatPage() {
     const { error: uploadError } = await supabase.storage
       .from(PHOTOS_BUCKET)
       .upload(path, file);
-    if (!uploadError) {
-      const { data: photoRow } = await supabase
-        .from("photos")
-        .insert({ storage_path: path, sender_name: name })
-        .select()
-        .single();
-      if (photoRow) {
-        await supabase
-          .from("messages")
-          .insert({ sender_name: name, photo_id: photoRow.id });
-      }
+    if (uploadError) {
+      alert("Photo non envoyée : " + uploadError.message);
+      setSending(false);
+      return;
+    }
+    const { data: photoRow, error: photoError } = await supabase
+      .from("photos")
+      .insert({ storage_path: path, sender_name: name })
+      .select()
+      .single();
+    if (photoError || !photoRow) {
+      alert("Photo non envoyée : " + (photoError?.message ?? "erreur inconnue"));
+      setSending(false);
+      return;
+    }
+    setPhotos((prev) => ({ ...prev, [photoRow.id]: photoRow }));
+    const { data: row, error: msgError } = await supabase
+      .from("messages")
+      .insert({ sender_name: name, photo_id: photoRow.id })
+      .select()
+      .single();
+    if (msgError) {
+      alert("Message photo non envoyé : " + msgError.message);
+    } else if (row) {
+      setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
     }
     setSending(false);
   }

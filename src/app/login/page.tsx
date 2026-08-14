@@ -39,6 +39,8 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="password"
+            name="code"
+            id="code"
             autoFocus
             value={code}
             onChange={(e) => setCode(e.target.value)}
