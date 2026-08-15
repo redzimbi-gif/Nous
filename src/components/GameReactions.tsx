@@ -5,13 +5,13 @@ import { supabase } from "@/lib/supabase";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 const REACTION_EMOJIS = ["😂", "😮", "🔥", "👏", "😡", "😭", "😏", "❤️"];
-const MIN_GAP = 18;
+const MAX_VISIBLE = 8;
 
-type FloatingReaction = { id: string; emoji: string; x: number };
+type FloatingReaction = { id: string; emoji: string };
 
 export default function GameReactions({ gameKey }: { gameKey: string }) {
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [floating, setFloating] = useState<FloatingReaction[]>([]);
+  const [recent, setRecent] = useState<FloatingReaction[]>([]);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
@@ -28,22 +28,12 @@ export default function GameReactions({ gameKey }: { gameKey: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameKey]);
 
-  function pickX(existing: number[]): number {
-    for (let attempt = 0; attempt < 8; attempt++) {
-      const candidate = 12 + Math.random() * 76;
-      if (existing.every((x) => Math.abs(x - candidate) >= MIN_GAP)) {
-        return candidate;
-      }
-    }
-    return 12 + Math.random() * 76;
-  }
-
   function spawn(emoji: string) {
     const id = crypto.randomUUID();
-    setFloating((prev) => [...prev, { id, emoji, x: pickX(prev.map((f) => f.x)) }]);
+    setRecent((prev) => [...prev, { id, emoji }].slice(-MAX_VISIBLE));
     setTimeout(() => {
-      setFloating((prev) => prev.filter((f) => f.id !== id));
-    }, 1600);
+      setRecent((prev) => prev.filter((f) => f.id !== id));
+    }, 3000);
   }
 
   function sendReaction(emoji: string) {
@@ -58,17 +48,17 @@ export default function GameReactions({ gameKey }: { gameKey: string }) {
 
   return (
     <>
-      <div className="pointer-events-none fixed inset-x-0 top-24 bottom-20 z-40 overflow-hidden">
-        {floating.map((f) => (
-          <span
-            key={f.id}
-            className="absolute bottom-0 animate-float-up text-4xl"
-            style={{ left: `${f.x}%` }}
-          >
-            {f.emoji}
-          </span>
-        ))}
-      </div>
+      {recent.length > 0 && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 flex justify-center">
+          <div className="flex items-center gap-1 rounded-full bg-white/90 px-3 py-1.5 shadow-lg backdrop-blur">
+            {recent.map((f) => (
+              <span key={f.id} className="animate-pop-in text-2xl">
+                {f.emoji}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="relative">
         <button
