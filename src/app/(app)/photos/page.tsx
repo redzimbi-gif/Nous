@@ -10,7 +10,7 @@ export default function PhotosPage() {
   const { name } = useIdentity();
   const [photos, setPhotos] = useState<PhotoRow[]>([]);
   const [urls, setUrls] = useState<Record<string, string>>({});
-  const [selected, setSelected] = useState<PhotoRow | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,12 +63,16 @@ export default function PhotosPage() {
   }
 
   async function handleDelete() {
-    if (!selected) return;
-    await supabase.storage.from(PHOTOS_BUCKET).remove([selected.storage_path]);
-    await supabase.from("photos").delete().eq("id", selected.id);
-    setSelected(null);
+    if (selectedIndex === null) return;
+    const photo = photos[selectedIndex];
+    if (!photo) return;
+    setSelectedIndex(null);
+    await supabase.storage.from(PHOTOS_BUCKET).remove([photo.storage_path]);
+    await supabase.from("photos").delete().eq("id", photo.id);
     load();
   }
+
+  const selected = selectedIndex !== null ? photos[selectedIndex] ?? null : null;
 
   return (
     <div className="flex h-full flex-col">
@@ -98,10 +102,10 @@ export default function PhotosPage() {
           </p>
         ) : (
           <div className="grid grid-cols-3 gap-1">
-            {photos.map((p) => (
+            {photos.map((p, i) => (
               <button
                 key={p.id}
-                onClick={() => setSelected(p)}
+                onClick={() => setSelectedIndex(i)}
                 className="aspect-square overflow-hidden rounded-lg bg-blush-100 transition active:scale-95"
               >
                 {urls[p.storage_path] && (
@@ -117,11 +121,19 @@ export default function PhotosPage() {
         )}
       </div>
 
-      {selected && (
+      {selected && selectedIndex !== null && (
         <Lightbox
           photo={selected}
           url={urls[selected.storage_path]}
-          onClose={() => setSelected(null)}
+          index={selectedIndex}
+          total={photos.length}
+          hasPrev={selectedIndex > 0}
+          hasNext={selectedIndex < photos.length - 1}
+          onPrev={() => setSelectedIndex((i) => (i !== null ? Math.max(i - 1, 0) : i))}
+          onNext={() =>
+            setSelectedIndex((i) => (i !== null ? Math.min(i + 1, photos.length - 1) : i))
+          }
+          onClose={() => setSelectedIndex(null)}
           onDelete={handleDelete}
         />
       )}
