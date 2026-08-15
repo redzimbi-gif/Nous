@@ -7,6 +7,7 @@ import type { EventRow } from "@/lib/types";
 import AgendaCalendar from "@/components/AgendaCalendar";
 import EventModal from "@/components/EventModal";
 import { toISODate } from "@/lib/date";
+import { sendNotification } from "@/lib/notify";
 
 const CATEGORY_EMOJI: Record<string, string> = {
   date: "💕",
@@ -56,6 +57,18 @@ export default function AgendaPage() {
       await supabase.from("events").update(values).eq("id", editing.id);
     } else {
       await supabase.from("events").insert({ ...values, created_by: name });
+      const dateLabel = values.event_date
+        ? new Date(values.event_date + "T00:00:00").toLocaleDateString("fr-FR", {
+            day: "numeric",
+            month: "long",
+          })
+        : "";
+      sendNotification({
+        senderName: name,
+        title: "📅 Nouvel événement",
+        body: `${values.title ?? "Événement"}${dateLabel ? ` le ${dateLabel}` : ""}`,
+        url: "/agenda",
+      });
     }
     setModalOpen(false);
     setEditing(null);

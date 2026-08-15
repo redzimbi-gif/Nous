@@ -14,6 +14,7 @@ import {
   effectOf,
 } from "@/lib/uno";
 import GameReactions from "@/components/GameReactions";
+import { sendNotification } from "@/lib/notify";
 
 const COLOR_ORDER: UnoColor[] = ["red", "yellow", "green", "blue"];
 
@@ -100,6 +101,12 @@ export default function UnoPage() {
       .single();
     if (data) setGame(data);
     setWildPending(null);
+    sendNotification({
+      senderName: name,
+      title: "🎮 Nouvelle partie",
+      body: `${name} a lancé une partie de Uno !`,
+      url: "/jeux/uno",
+    });
   }
 
   async function playCard(card: UnoCard, chosenColor?: UnoColor) {
@@ -161,6 +168,14 @@ export default function UnoPage() {
       return;
     }
     if (data) setGame(data);
+    if (data && !winner && nextTurn === opponent) {
+      sendNotification({
+        senderName: name,
+        title: "🎮 À toi de jouer",
+        body: "C'est ton tour au Uno !",
+        url: "/jeux/uno",
+      });
+    }
   }
 
   async function drawCard() {
@@ -182,6 +197,14 @@ export default function UnoPage() {
       return;
     }
     if (data) setGame(data);
+    if (data) {
+      sendNotification({
+        senderName: name,
+        title: "🎮 À toi de jouer",
+        body: "C'est ton tour au Uno !",
+        url: "/jeux/uno",
+      });
+    }
   }
 
   return (
@@ -247,6 +270,7 @@ export default function UnoPage() {
                 </p>
               )}
 
+            {/* Main de l'adversaire (dos des cartes, nombre visible seulement) */}
             <div className="flex flex-wrap justify-center gap-1">
               {Array.from({ length: opponentCount }).map((_, i) => (
                 <div
@@ -256,6 +280,7 @@ export default function UnoPage() {
               ))}
             </div>
 
+            {/* Pioche + défausse */}
             <div className="flex items-center justify-center gap-6 py-2">
               <button
                 onClick={drawCard}
@@ -282,6 +307,7 @@ export default function UnoPage() {
               )}
             </div>
 
+            {/* Sélecteur de couleur pour une carte joker */}
             {wildPending && (
               <div className="flex flex-col items-center gap-2 rounded-2xl bg-white p-3 shadow-md">
                 <p className="text-xs font-semibold text-blush-500">Choisis une couleur</p>
@@ -304,6 +330,7 @@ export default function UnoPage() {
               </div>
             )}
 
+            {/* Ma main */}
             <div className="mt-auto w-full">
               <p className="mb-1.5 text-center text-xs font-bold text-blush-400">
                 Ta main ({myHand.length})

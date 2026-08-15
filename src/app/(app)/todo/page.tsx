@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import type { TodoCategory, TodoRow } from "@/lib/types";
 import { TODO_CATEGORIES, categoryEmoji, categoryLabel } from "@/lib/todoCategories";
+import { sendNotification } from "@/lib/notify";
 
 export default function TodoPage() {
   const { name } = useIdentity();
@@ -66,6 +67,12 @@ export default function TodoPage() {
       return;
     }
     if (data) setTodos((prev) => [...prev, data]);
+    sendNotification({
+      senderName: name,
+      title: "✅ Nouvelle tâche",
+      body: content,
+      url: "/todo",
+    });
   }
 
   async function toggleTodo(todo: TodoRow) {

@@ -19,6 +19,7 @@ import {
   type Orientation,
 } from "@/lib/battleship";
 import GameReactions from "@/components/GameReactions";
+import { sendNotification } from "@/lib/notify";
 
 export default function BatailleNavalePage() {
   const { name } = useIdentity();
@@ -124,6 +125,12 @@ export default function BatailleNavalePage() {
       .select()
       .single();
     if (data) setGame(data);
+    sendNotification({
+      senderName: name,
+      title: "🎮 Nouvelle partie",
+      body: `${name} a lancé une partie de bataille navale !`,
+      url: "/jeux/bataille",
+    });
   }
 
   function handlePlacementCellClick(r: number, c: number) {
@@ -178,6 +185,14 @@ export default function BatailleNavalePage() {
       return;
     }
     if (data) setGame(data);
+    if (data && !won) {
+      sendNotification({
+        senderName: name,
+        title: "🎮 À toi de jouer",
+        body: "C'est ton tour à la bataille navale !",
+        url: "/jeux/bataille",
+      });
+    }
   }
 
   return (

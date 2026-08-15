@@ -1,5 +1,6 @@
 import BottomNav from "@/components/BottomNav";
 import StatusBar from "@/components/StatusBar";
+import MessageToast from "@/components/MessageToast";
 import { IdentityProvider } from "@/lib/identity";
 
 export default function AppLayout({
@@ -11,6 +12,7 @@ export default function AppLayout({
     <IdentityProvider>
       <div className="flex h-[100dvh] flex-col bg-cream">
         <StatusBar />
+        <MessageToast />
         <div className="flex-1 overflow-hidden">{children}</div>
         <BottomNav />
       </div>

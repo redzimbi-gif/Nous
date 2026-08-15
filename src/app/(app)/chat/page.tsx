@@ -7,6 +7,7 @@ import type { MessageRow, PhotoRow, RefRow } from "@/lib/types";
 import MessageBubble from "@/components/MessageBubble";
 import MessageActions from "@/components/MessageActions";
 import RefPicker from "@/components/RefPicker";
+import { sendNotification } from "@/lib/notify";
 
 export default function ChatPage() {
   const { name, color } = useIdentity();
@@ -107,16 +108,7 @@ export default function ChatPage() {
   }, [messages, view]);
 
   function notify(preview: string) {
-    fetch("/api/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        senderName: name,
-        title: `💬 ${name}`,
-        body: preview,
-        url: "/chat",
-      }),
-    }).catch(() => {});
+    sendNotification({ senderName: name, title: `💬 ${name}`, body: preview, url: "/chat" });
   }
 
   async function sendText() {
@@ -217,7 +209,14 @@ export default function ChatPage() {
       .insert({ content: message.content, created_by: name, category: null });
     if (error) {
       alert("Tâche non ajoutée : " + error.message);
+      return;
     }
+    sendNotification({
+      senderName: name,
+      title: "✅ Nouvelle tâche",
+      body: message.content,
+      url: "/todo",
+    });
   }
 
   const displayedMessages = view === "canards" ? messages.filter((m) => m.saved) : messages;

@@ -7,6 +7,7 @@ import { useIdentity } from "@/lib/identity";
 import type { TicTacToeGame } from "@/lib/types";
 import { calculateWinner, isBoardFull, EMPTY_BOARD } from "@/lib/tictactoe";
 import GameReactions from "@/components/GameReactions";
+import { sendNotification } from "@/lib/notify";
 
 export default function MorpionPage() {
   const { name } = useIdentity();
@@ -83,6 +84,12 @@ export default function MorpionPage() {
       .select()
       .single();
     if (data) setGame(data);
+    sendNotification({
+      senderName: name,
+      title: "🎮 Nouvelle partie",
+      body: `${name} a lancé une partie de morpion !`,
+      url: "/jeux/morpion",
+    });
   }
 
   async function handleCellClick(index: number) {
@@ -105,6 +112,14 @@ export default function MorpionPage() {
       return;
     }
     if (data) setGame(data);
+    if (data && !data.winner) {
+      sendNotification({
+        senderName: name,
+        title: "🎮 À toi de jouer",
+        body: "C'est ton tour au morpion !",
+        url: "/jeux/morpion",
+      });
+    }
   }
 
   return (

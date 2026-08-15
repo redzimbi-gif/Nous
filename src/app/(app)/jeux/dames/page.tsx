@@ -17,6 +17,7 @@ import {
   type CheckersPos,
 } from "@/lib/checkers";
 import GameReactions from "@/components/GameReactions";
+import { sendNotification } from "@/lib/notify";
 
 export default function DamesPage() {
   const { name } = useIdentity();
@@ -114,6 +115,12 @@ export default function DamesPage() {
     if (data) setGame(data);
     setSelected(null);
     setForcedPos(null);
+    sendNotification({
+      senderName: name,
+      title: "🎮 Nouvelle partie",
+      body: `${name} a lancé une partie de dames !`,
+      url: "/jeux/dames",
+    });
   }
 
   async function performMove(from: CheckersPos, move: CheckersMove) {
@@ -140,6 +147,14 @@ export default function DamesPage() {
       return;
     }
     if (data) setGame(data);
+    if (data && !chains && !data.winner) {
+      sendNotification({
+        senderName: name,
+        title: "🎮 À toi de jouer",
+        body: "C'est ton tour aux dames !",
+        url: "/jeux/dames",
+      });
+    }
     if (chains) {
       setSelected(move.to);
       setForcedPos(move.to);

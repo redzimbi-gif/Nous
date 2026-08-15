@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import type { Mood, PresenceRow, StatusRow } from "@/lib/types";
-import { MOODS, moodEmoji } from "@/lib/moods";
+import { MOODS, moodEmoji, moodLabel } from "@/lib/moods";
 import { PRESENCE_HEARTBEAT_MS, isPresenceOnline } from "@/lib/presence";
+import { sendNotification } from "@/lib/notify";
 
 export default function StatusBar() {
   const { name } = useIdentity();
@@ -109,6 +110,12 @@ export default function StatusBar() {
       .select()
       .single();
     if (data) setStatuses((prev) => [...prev.filter((s) => s.name !== name), data]);
+    sendNotification({
+      senderName: name,
+      title: "💭 Changement d'humeur",
+      body: `${name} se sent maintenant : ${moodLabel(mood)} ${moodEmoji(mood)}`,
+      url: "/chat",
+    });
   }
 
   const myOnline = isPresenceOnline(presence.find((p) => p.name === name));
