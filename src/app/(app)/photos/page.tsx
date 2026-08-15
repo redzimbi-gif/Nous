@@ -62,6 +62,14 @@ export default function PhotosPage() {
     load();
   }
 
+  async function handleDelete() {
+    if (!selected) return;
+    await supabase.storage.from(PHOTOS_BUCKET).remove([selected.storage_path]);
+    await supabase.from("photos").delete().eq("id", selected.id);
+    setSelected(null);
+    load();
+  }
+
   return (
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
@@ -69,7 +77,7 @@ export default function PhotosPage() {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white disabled:opacity-50"
+          className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white transition active:scale-95 disabled:opacity-50"
         >
           {uploading ? "Envoi…" : "+ Ajouter"}
         </button>
@@ -94,7 +102,7 @@ export default function PhotosPage() {
               <button
                 key={p.id}
                 onClick={() => setSelected(p)}
-                className="aspect-square overflow-hidden rounded-lg bg-blush-100"
+                className="aspect-square overflow-hidden rounded-lg bg-blush-100 transition active:scale-95"
               >
                 {urls[p.storage_path] && (
                   <img
@@ -114,6 +122,7 @@ export default function PhotosPage() {
           photo={selected}
           url={urls[selected.storage_path]}
           onClose={() => setSelected(null)}
+          onDelete={handleDelete}
         />
       )}
     </div>

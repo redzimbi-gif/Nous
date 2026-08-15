@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase, REFS_BUCKET } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import type { RefRow } from "@/lib/types";
-import RefModal from "@/components/RefModal";
+import RefModal, { type RefFormValues } from "@/components/RefModal";
 import RefDetail from "@/components/RefDetail";
 
 export default function RefPage() {
@@ -12,6 +12,7 @@ export default function RefPage() {
   const [items, setItems] = useState<RefRow[]>([]);
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<RefRow | null>(null);
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<RefRow | null>(null);
 
@@ -41,10 +42,16 @@ export default function RefPage() {
     load();
   }, []);
 
-  async function handleSave(values: { title: string; link: string; file: File | null }) {
+  async function handleSave(values: RefFormValues) {
     setSaving(true);
-    let media_path: string | null = null;
-    let media_type: "image" | "video" | null = null;
+    let media_path: string | null = editing?.media_path ?? null;
+    let media_type: "image" | "video" | null = editing?.media_type ?? null;
+
+    if ((values.removeMedia || values.file) && editing?.media_path) {
+      await supabase.storage.from(REFS_BUCKET).remove([editing.media_path]);
+      media_path = null;
+      media_type = null;
+    }
 
     if (values.file) {
       media_type = values.file.type.startsWith("video/") ? "video" : "image";
@@ -60,24 +67,47 @@ export default function RefPage() {
       media_path = path;
     }
 
-    const { error } = await supabase.from("refs").insert({
-      title: values.title,
-      link: values.link || null,
-      media_path,
-      media_type,
-      created_by: name,
-    });
-    setSaving(false);
-    if (error) {
-      alert("Ref non ajoutée : " + error.message);
-      return;
+    if (editing) {
+      const { error } = await supabase
+        .from("refs")
+        .update({
+          title: values.title,
+          link: values.link || null,
+          media_path,
+          media_type,
+        })
+        .eq("id", editing.id);
+      setSaving(false);
+      if (error) {
+        alert("Ref non modifiée : " + error.message);
+        return;
+      }
+    } else {
+      const { error } = await supabase.from("refs").insert({
+        title: values.title,
+        link: values.link || null,
+        media_path,
+        media_type,
+        created_by: name,
+      });
+      setSaving(false);
+      if (error) {
+        alert("Ref non ajoutée : " + error.message);
+        return;
+      }
     }
+
     setModalOpen(false);
+    setEditing(null);
+    setSelected(null);
     load();
   }
 
   async function handleDelete() {
     if (!selected) return;
+    if (selected.media_path) {
+      await supabase.storage.from(REFS_BUCKET).remove([selected.media_path]);
+    }
     await supabase.from("refs").delete().eq("id", selected.id);
     setSelected(null);
     load();
@@ -88,8 +118,11 @@ export default function RefPage() {
       <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
         <h1 className="text-lg font-extrabold text-blush-700">🖼️ Armoire à ref</h1>
         <button
-          onClick={() => setModalOpen(true)}
-          className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white"
+          onClick={() => {
+            setEditing(null);
+            setModalOpen(true);
+          }}
+          className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white transition active:scale-95"
         >
           + Ajouter
         </button>
@@ -106,7 +139,7 @@ export default function RefPage() {
               <button
                 key={item.id}
                 onClick={() => setSelected(item)}
-                className="overflow-hidden rounded-2xl bg-white text-left shadow-sm"
+                className="overflow-hidden rounded-2xl bg-white text-left shadow-sm transition active:scale-[0.97]"
               >
                 <div className="flex aspect-square items-center justify-center bg-blush-50">
                   {item.media_path && item.media_type === "image" && urls[item.media_path] && (
@@ -131,14 +164,27 @@ export default function RefPage() {
       </div>
 
       {modalOpen && (
-        <RefModal onClose={() => setModalOpen(false)} onSave={handleSave} saving={saving} />
+        <RefModal
+          initial={editing ?? undefined}
+          existingMediaUrl={editing?.media_path ? urls[editing.media_path] : undefined}
+          onClose={() => {
+            setModalOpen(false);
+            setEditing(null);
+          }}
+          onSave={handleSave}
+          saving={saving}
+        />
       )}
 
-      {selected && (
+      {selected && !modalOpen && (
         <RefDetail
           item={selected}
           url={selected.media_path ? urls[selected.media_path] : undefined}
           onClose={() => setSelected(null)}
+          onEdit={() => {
+            setEditing(selected);
+            setModalOpen(true);
+          }}
           onDelete={handleDelete}
         />
       )}

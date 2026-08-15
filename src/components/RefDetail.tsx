@@ -6,11 +6,13 @@ export default function RefDetail({
   item,
   url,
   onClose,
+  onEdit,
   onDelete,
 }: {
   item: RefRow;
   url?: string;
   onClose: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -29,7 +31,16 @@ export default function RefDetail({
           <video src={url} controls className="mb-4 max-h-72 w-full rounded-2xl" />
         )}
 
-        <h2 className="mb-1 text-lg font-extrabold text-blush-700">{item.title}</h2>
+        <div className="mb-1 flex items-start justify-between gap-2">
+          <h2 className="text-lg font-extrabold text-blush-700">{item.title}</h2>
+          <button
+            onClick={onEdit}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-blush-300 transition hover:text-blush-500 active:scale-90"
+            aria-label="Modifier"
+          >
+            ✎
+          </button>
+        </div>
         <p className="mb-4 text-xs text-blush-300">
           Ajouté par {item.created_by} ·{" "}
           {new Date(item.created_at).toLocaleDateString("fr-FR")}
@@ -40,7 +51,7 @@ export default function RefDetail({
             href={item.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="mb-4 block truncate rounded-xl bg-blush-50 px-3 py-2.5 text-sm font-semibold text-blush-600"
+            className="mb-4 block truncate rounded-xl bg-blush-50 px-3 py-2.5 text-sm font-semibold text-blush-600 transition active:scale-[0.98]"
           >
             🔗 {item.link}
           </a>
@@ -49,13 +60,13 @@ export default function RefDetail({
         <div className="flex gap-2">
           <button
             onClick={onDelete}
-            className="flex-1 rounded-xl bg-red-50 py-3 font-bold text-red-500"
+            className="flex-1 rounded-xl bg-red-50 py-3 font-bold text-red-500 transition active:scale-[0.98]"
           >
             Supprimer
           </button>
           <button
             onClick={onClose}
-            className="flex-1 rounded-xl bg-blush-50 py-3 font-bold text-blush-500"
+            className="flex-1 rounded-xl bg-blush-50 py-3 font-bold text-blush-500 transition active:scale-[0.98]"
           >
             Fermer
           </button>

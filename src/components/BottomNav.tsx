@@ -22,11 +22,18 @@ export default function BottomNav() {
           <Link
             key={tab.href}
             href={tab.href}
-            className={`flex flex-1 flex-col items-center gap-0.5 py-3 text-xs font-semibold transition ${
+            className={`relative flex flex-1 flex-col items-center gap-0.5 py-3 text-xs font-semibold transition-colors duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blush-300 ${
               active ? "text-blush-600" : "text-blush-300"
             }`}
           >
-            <span className="text-xl">{tab.icon}</span>
+            <span
+              className={`absolute top-0 h-0.5 w-8 rounded-full bg-blush-500 transition-opacity duration-200 ${
+                active ? "opacity-100" : "opacity-0"
+              }`}
+            />
+            <span className={`text-xl transition-transform duration-200 ${active ? "scale-110" : ""}`}>
+              {tab.icon}
+            </span>
             {tab.label}
           </Link>
         );
