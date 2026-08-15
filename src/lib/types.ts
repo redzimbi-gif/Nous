@@ -11,6 +11,8 @@ export type MessageRow = {
   sender_name: string;
   content: string | null;
   photo_id: string | null;
+  ref_id: string | null;
+  saved: boolean;
   created_at: string;
 };
 

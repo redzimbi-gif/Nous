@@ -11,6 +11,9 @@ export default function TodoPage() {
   const [todos, setTodos] = useState<TodoRow[]>([]);
   const [text, setText] = useState("");
   const [newCategory, setNewCategory] = useState<TodoCategory | null>(null);
+  const [editingTodo, setEditingTodo] = useState<TodoRow | null>(null);
+  const [editText, setEditText] = useState("");
+  const [editCategory, setEditCategory] = useState<TodoCategory | null>(null);
 
   useEffect(() => {
     supabase
@@ -78,6 +81,28 @@ export default function TodoPage() {
   async function deleteTodo(id: string) {
     setTodos((prev) => prev.filter((t) => t.id !== id));
     await supabase.from("todos").delete().eq("id", id);
+  }
+
+  function openEdit(todo: TodoRow) {
+    setEditingTodo(todo);
+    setEditText(todo.content);
+    setEditCategory(todo.category);
+  }
+
+  async function saveEdit() {
+    if (!editingTodo || !editText.trim()) return;
+    const { data, error } = await supabase
+      .from("todos")
+      .update({ content: editText.trim(), category: editCategory })
+      .eq("id", editingTodo.id)
+      .select()
+      .single();
+    if (error) {
+      alert("Tâche non modifiée : " + error.message);
+      return;
+    }
+    if (data) setTodos((prev) => prev.map((t) => (t.id === data.id ? data : t)));
+    setEditingTodo(null);
   }
 
   const groups: { category: TodoCategory | null; items: TodoRow[] }[] = [
@@ -161,7 +186,12 @@ export default function TodoPage() {
                     >
                       <span className="h-6 w-6 rounded-full border-2 border-blush-300 transition" />
                     </button>
-                    <span className="flex-1 py-2 text-blush-800">{todo.content}</span>
+                    <button
+                      onClick={() => openEdit(todo)}
+                      className="flex-1 py-2 text-left text-blush-800"
+                    >
+                      {todo.content}
+                    </button>
                     <button
                       onClick={() => deleteTodo(todo.id)}
                       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-blush-200 transition hover:text-blush-400 active:scale-90"
@@ -185,9 +215,12 @@ export default function TodoPage() {
                         ✓
                       </span>
                     </button>
-                    <span className="flex-1 py-2 text-blush-300 line-through">
+                    <button
+                      onClick={() => openEdit(todo)}
+                      className="flex-1 py-2 text-left text-blush-300 line-through"
+                    >
                       {todo.content}
-                    </span>
+                    </button>
                     <button
                       onClick={() => deleteTodo(todo.id)}
                       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-blush-200 transition hover:text-blush-400 active:scale-90"
@@ -202,6 +235,62 @@ export default function TodoPage() {
           );
         })}
       </div>
+
+      {editingTodo && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-blush-900/40 backdrop-blur-sm sm:items-center"
+          onClick={() => setEditingTodo(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-t-3xl bg-white p-6 sm:rounded-3xl"
+          >
+            <h2 className="mb-4 text-lg font-extrabold text-blush-700">Modifier la tâche</h2>
+
+            <input
+              autoFocus
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              className="mb-3 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none transition focus:border-blush-300 focus-visible:ring-2 focus-visible:ring-blush-200"
+            />
+
+            <div className="mb-5 flex flex-wrap gap-1.5">
+              {TODO_CATEGORIES.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() =>
+                    setEditCategory((prev) => (prev === c.value ? null : c.value))
+                  }
+                  className={`rounded-full border-2 px-2.5 py-1.5 text-xs font-semibold transition active:scale-95 ${
+                    editCategory === c.value
+                      ? "border-blush-400 bg-blush-100 text-blush-700"
+                      : "border-blush-100 bg-white text-blush-400"
+                  }`}
+                >
+                  {c.emoji} {c.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditingTodo(null)}
+                className="flex-1 rounded-xl bg-blush-50 py-3 font-bold text-blush-500 transition active:scale-[0.98]"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={!editText.trim()}
+                className="flex-1 rounded-xl bg-blush-500 py-3 font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
+              >
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

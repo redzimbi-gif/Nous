@@ -1,22 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase, PHOTOS_BUCKET } from "@/lib/supabase";
-import type { MessageRow, PhotoRow } from "@/lib/types";
+import { supabase, PHOTOS_BUCKET, REFS_BUCKET } from "@/lib/supabase";
+import type { MessageRow, PhotoRow, RefRow } from "@/lib/types";
 import { COLOR_CLASSES } from "@/lib/identity";
 
 export default function MessageBubble({
   message,
   photo,
+  refItem,
   isMine,
   color,
+  onOpenActions,
 }: {
   message: MessageRow;
   photo?: PhotoRow;
+  refItem?: RefRow;
   isMine: boolean;
   color: string;
+  onOpenActions: () => void;
 }) {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
+  const [refImgUrl, setRefImgUrl] = useState<string | null>(null);
   const classes = COLOR_CLASSES[color] ?? COLOR_CLASSES.blush;
 
   useEffect(() => {
@@ -33,10 +38,26 @@ export default function MessageBubble({
     };
   }, [photo]);
 
+  useEffect(() => {
+    if (!refItem?.media_path || refItem.media_type !== "image") return;
+    let active = true;
+    supabase.storage
+      .from(REFS_BUCKET)
+      .createSignedUrl(refItem.media_path, 3600)
+      .then(({ data }) => {
+        if (active) setRefImgUrl(data?.signedUrl ?? null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [refItem]);
+
   const time = new Date(message.created_at).toLocaleTimeString("fr-FR", {
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  const overlayBg = isMine ? "bg-white/20" : "bg-black/5";
 
   return (
     <div className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
@@ -62,11 +83,49 @@ export default function MessageBubble({
           ) : (
             <div className="mb-1 h-40 w-48 animate-pulse rounded-2xl bg-black/10" />
           ))}
+        {message.ref_id &&
+          (refItem ? (
+            <a
+              href={refItem.link ?? undefined}
+              target={refItem.link ? "_blank" : undefined}
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                if (!refItem.link) e.preventDefault();
+              }}
+              className={`flex items-center gap-2 rounded-2xl p-2 ${overlayBg}`}
+            >
+              {refItem.media_type === "image" && refImgUrl ? (
+                <img src={refImgUrl} alt="" className="h-12 w-12 rounded-xl object-cover" />
+              ) : (
+                <span className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl ${overlayBg}`}>
+                  {refItem.media_type === "video" ? "🎬" : "🔖"}
+                </span>
+              )}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-bold">{refItem.title}</span>
+                <span className="block text-xs opacity-70">Voir dans l&apos;armoire à ref</span>
+              </span>
+            </a>
+          ) : (
+            <div className={`flex items-center gap-2 rounded-2xl p-2 text-sm opacity-70 ${overlayBg}`}>
+              🔖 Ref supprimée
+            </div>
+          ))}
         {message.content && (
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
         )}
       </div>
-      <span className="mt-0.5 px-2 text-[10px] text-blush-300">{time}</span>
+      <div className="mt-0.5 flex items-center gap-1.5 px-2">
+        {message.saved && <span className="text-[11px]">🦆</span>}
+        <span className="text-[10px] text-blush-300">{time}</span>
+        <button
+          onClick={onOpenActions}
+          className="flex h-5 w-5 items-center justify-center text-blush-200 transition hover:text-blush-400 active:scale-90"
+          aria-label="Actions du message"
+        >
+          ⋯
+        </button>
+      </div>
     </div>
   );
 }
