@@ -1,4 +1,5 @@
 import Link from "next/link";
+import NotificationsCard from "@/components/NotificationsCard";
 
 const ITEMS = [
   { href: "/jeux", icon: "🎮", label: "Jeux", desc: "Morpion, dames, bataille, Uno" },
@@ -26,6 +27,7 @@ export default function PlusPage() {
             </span>
           </Link>
         ))}
+        <NotificationsCard />
       </div>
     </div>
   );

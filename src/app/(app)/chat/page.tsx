@@ -93,9 +93,23 @@ export default function ChatPage() {
         return;
       }
       setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+      notify(content.length > 80 ? content.slice(0, 80) + "…" : content);
     } catch (e: any) {
       alert("Message non envoyé : " + (e?.message ?? String(e)));
     }
+  }
+
+  function notify(preview: string) {
+    fetch("/api/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        senderName: name,
+        title: `💬 ${name}`,
+        body: preview,
+        url: "/chat",
+      }),
+    }).catch(() => {});
   }
 
   async function sendPhoto(file: File) {
@@ -129,6 +143,7 @@ export default function ChatPage() {
       alert("Message photo non envoyé : " + msgError.message);
     } else if (row) {
       setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+      notify("📷 a envoyé une photo");
     }
     setSending(false);
   }
