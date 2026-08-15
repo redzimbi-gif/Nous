@@ -19,6 +19,12 @@ const GAMES = [
     label: "Bataille navale",
     desc: "Place ta flotte et coule l'autre",
   },
+  {
+    href: "/jeux/uno",
+    icon: "🎴",
+    label: "Uno",
+    desc: "Le classique en 2 joueurs",
+  },
 ];
 
 export default function JeuxPage() {

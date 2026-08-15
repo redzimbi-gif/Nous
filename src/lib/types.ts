@@ -119,3 +119,42 @@ export type BattleshipGame = {
   winner: "A" | "B" | null;
   created_at: string;
 };
+
+export type UnoColor = "red" | "yellow" | "green" | "blue";
+export type UnoCardColor = UnoColor | "wild";
+export type UnoValue =
+  | "0"
+  | "1"
+  | "2"
+  | "3"
+  | "4"
+  | "5"
+  | "6"
+  | "7"
+  | "8"
+  | "9"
+  | "skip"
+  | "reverse"
+  | "draw2"
+  | "wild"
+  | "wild4";
+
+export type UnoCard = {
+  id: string;
+  color: UnoCardColor;
+  value: UnoValue;
+};
+
+export type UnoGame = {
+  id: string;
+  a_name: string;
+  b_name: string | null;
+  hand_a: UnoCard[];
+  hand_b: UnoCard[];
+  draw_pile: UnoCard[];
+  discard_pile: UnoCard[];
+  active_color: UnoColor;
+  turn: "A" | "B";
+  winner: "A" | "B" | null;
+  created_at: string;
+};

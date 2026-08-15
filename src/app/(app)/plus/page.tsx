@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const ITEMS = [
-  { href: "/jeux", icon: "🎮", label: "Jeux", desc: "Morpion, dames, bataille" },
+  { href: "/jeux", icon: "🎮", label: "Jeux", desc: "Morpion, dames, bataille, Uno" },
   { href: "/ref", icon: "🖼️", label: "Armoire à ref", desc: "Titre, lien, photo/vidéo" },
 ];
 
