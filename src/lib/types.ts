@@ -90,3 +90,21 @@ export type CheckersGame = {
   winner: CheckersPlayer | null;
   created_at: string;
 };
+
+export type ShipCell = { r: number; c: number };
+export type Ship = { cells: ShipCell[] };
+
+export type BattleshipGame = {
+  id: string;
+  a_name: string;
+  b_name: string | null;
+  a_ships: Ship[] | null;
+  b_ships: Ship[] | null;
+  a_ready: boolean;
+  b_ready: boolean;
+  a_shots: ShipCell[];
+  b_shots: ShipCell[];
+  turn: "A" | "B";
+  winner: "A" | "B" | null;
+  created_at: string;
+};

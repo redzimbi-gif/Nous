@@ -13,6 +13,12 @@ const GAMES = [
     label: "Dames",
     desc: "Prises obligatoires, dames, le tout",
   },
+  {
+    href: "/jeux/bataille",
+    icon: "🚢",
+    label: "Bataille navale",
+    desc: "Place ta flotte et coule l'autre",
+  },
 ];
 
 export default function JeuxPage() {
