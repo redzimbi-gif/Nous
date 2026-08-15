@@ -62,7 +62,7 @@ export default function EventModal({
             autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="mt-1 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none focus:border-blush-300"
+            className="mt-1 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none transition focus:border-blush-300 focus-visible:ring-2 focus-visible:ring-blush-200"
             placeholder="Resto, anniversaire, week-end…"
           />
         </label>
@@ -73,7 +73,7 @@ export default function EventModal({
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="mt-1 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none focus:border-blush-300"
+            className="mt-1 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none transition focus:border-blush-300 focus-visible:ring-2 focus-visible:ring-blush-200"
           />
         </label>
 
@@ -84,7 +84,7 @@ export default function EventModal({
           <button
             type="button"
             onClick={() => setAllDay(!allDay)}
-            className={`h-7 w-12 rounded-full transition ${
+            className={`h-7 w-12 rounded-full transition active:scale-95 ${
               allDay ? "bg-blush-400" : "bg-blush-100"
             }`}
           >
@@ -103,7 +103,7 @@ export default function EventModal({
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="mt-1 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none focus:border-blush-300"
+              className="mt-1 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none transition focus:border-blush-300 focus-visible:ring-2 focus-visible:ring-blush-200"
             />
           </label>
         )}
@@ -116,7 +116,7 @@ export default function EventModal({
                 key={c.value}
                 type="button"
                 onClick={() => setCategory(c.value)}
-                className={`flex-1 rounded-xl border-2 py-2 text-sm ${
+                className={`flex-1 rounded-xl border-2 py-2 text-sm transition active:scale-95 ${
                   category === c.value
                     ? "border-blush-400 bg-blush-50"
                     : "border-blush-100"
@@ -135,7 +135,7 @@ export default function EventModal({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="mt-1 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none focus:border-blush-300"
+            className="mt-1 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none transition focus:border-blush-300 focus-visible:ring-2 focus-visible:ring-blush-200"
           />
         </label>
 
@@ -144,7 +144,7 @@ export default function EventModal({
             <button
               type="button"
               onClick={onDelete}
-              className="flex-1 rounded-xl bg-red-50 py-3 font-bold text-red-500"
+              className="flex-1 rounded-xl bg-red-50 py-3 font-bold text-red-500 transition active:scale-[0.98]"
             >
               Supprimer
             </button>
@@ -152,13 +152,13 @@ export default function EventModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-xl bg-blush-50 py-3 font-bold text-blush-500"
+            className="flex-1 rounded-xl bg-blush-50 py-3 font-bold text-blush-500 transition active:scale-[0.98]"
           >
             Annuler
           </button>
           <button
             type="submit"
-            className="flex-1 rounded-xl bg-blush-500 py-3 font-bold text-white"
+            className="flex-1 rounded-xl bg-blush-500 py-3 font-bold text-white transition active:scale-[0.98]"
           >
             OK
           </button>

@@ -80,7 +80,7 @@ export default function AgendaPage() {
             setEditing(null);
             setModalOpen(true);
           }}
-          className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white"
+          className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white transition active:scale-95"
         >
           + Ajouter
         </button>
@@ -113,7 +113,7 @@ export default function AgendaPage() {
                 setEditing(ev);
                 setModalOpen(true);
               }}
-              className="flex w-full items-center gap-3 rounded-2xl bg-white p-3 text-left shadow-sm"
+              className="flex w-full items-center gap-3 rounded-2xl bg-white p-3 text-left shadow-sm transition active:scale-[0.98]"
             >
               <span className="text-xl">
                 {CATEGORY_EMOJI[ev.category] ?? "📌"}

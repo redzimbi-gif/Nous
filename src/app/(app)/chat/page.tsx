@@ -179,7 +179,7 @@ export default function ChatPage() {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={sending}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-100 text-xl disabled:opacity-50"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-100 text-xl transition active:scale-90 disabled:opacity-50 disabled:active:scale-100"
         >
           📷
         </button>
@@ -187,12 +187,12 @@ export default function ChatPage() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Écris un message…"
-          className="flex-1 rounded-full border-2 border-blush-100 bg-blush-50 px-4 py-2.5 outline-none focus:border-blush-300"
+          className="flex-1 rounded-full border-2 border-blush-100 bg-blush-50 px-4 py-2.5 outline-none transition focus:border-blush-300 focus-visible:ring-2 focus-visible:ring-blush-200"
         />
         <button
           type="submit"
           disabled={!text.trim()}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-500 text-white disabled:opacity-50"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-500 text-white transition active:scale-90 disabled:opacity-50 disabled:active:scale-100"
         >
           ➤
         </button>

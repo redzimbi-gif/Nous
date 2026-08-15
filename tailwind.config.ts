@@ -29,9 +29,14 @@ const config: Config = {
           "30%, 50%, 70%": { transform: "translateX(-4px)" },
           "40%, 60%": { transform: "translateX(4px)" },
         },
+        "pop-in": {
+          "0%": { opacity: "0", transform: "scale(0.92)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
       },
       animation: {
         shake: "shake 0.5s",
+        "pop-in": "pop-in 0.15s ease-out",
       },
     },
   },

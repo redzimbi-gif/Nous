@@ -45,7 +45,7 @@ export default function LoginPage() {
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder="Code secret"
-            className={`w-full rounded-2xl border-2 bg-white px-5 py-4 text-center text-lg outline-none transition ${
+            className={`w-full rounded-2xl border-2 bg-white px-5 py-4 text-center text-lg outline-none transition focus-visible:ring-2 focus-visible:ring-blush-200 ${
               error
                 ? "animate-shake border-red-400"
                 : "border-blush-200 focus:border-blush-400"
@@ -57,7 +57,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || !code}
-            className="w-full rounded-2xl bg-blush-500 py-4 text-lg font-bold text-white shadow-lg shadow-blush-200 transition hover:bg-blush-600 disabled:opacity-50"
+            className="w-full rounded-2xl bg-blush-500 py-4 text-lg font-bold text-white shadow-lg shadow-blush-200 transition hover:bg-blush-600 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
           >
             {loading ? "…" : "Entrer"}
           </button>

@@ -17,7 +17,7 @@ export default function PlusPage() {
           <Link
             key={item.href}
             href={item.href}
-            className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm"
+            className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm transition active:scale-[0.98]"
           >
             <span className="text-3xl">{item.icon}</span>
             <span>

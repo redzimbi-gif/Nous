@@ -26,7 +26,7 @@ export default function AgendaCalendar({
       <div className="mb-3 flex items-center justify-between">
         <button
           onClick={() => onCursorChange(new Date(year, month - 1, 1))}
-          className="px-2 text-lg text-blush-400"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-blush-400 transition hover:bg-blush-50 active:scale-90"
           aria-label="Mois précédent"
         >
           ‹
@@ -36,7 +36,7 @@ export default function AgendaCalendar({
         </span>
         <button
           onClick={() => onCursorChange(new Date(year, month + 1, 1))}
-          className="px-2 text-lg text-blush-400"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-blush-400 transition hover:bg-blush-50 active:scale-90"
           aria-label="Mois suivant"
         >
           ›
@@ -61,7 +61,7 @@ export default function AgendaCalendar({
             <button
               key={iso}
               onClick={() => onSelectDate(iso)}
-              className={`relative aspect-square rounded-xl text-sm transition ${
+              className={`relative aspect-square rounded-xl text-sm transition active:scale-90 ${
                 isSelected
                   ? "bg-blush-500 font-bold text-white"
                   : isToday

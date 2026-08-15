@@ -78,25 +78,29 @@ function NamePrompt({ onSave }: { onSave: (name: string, color: string) => void 
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Ton prénom"
-          className="mb-4 w-full rounded-xl border-2 border-blush-200 px-4 py-3 text-center outline-none focus:border-blush-400"
+          className="mb-4 w-full rounded-xl border-2 border-blush-200 px-4 py-3 text-center outline-none transition focus:border-blush-400 focus-visible:ring-2 focus-visible:ring-blush-200"
         />
-        <div className="mb-5 flex justify-center gap-2">
+        <div className="mb-5 flex justify-center gap-1">
           {COLORS.map((c) => (
             <button
               type="button"
               key={c}
               onClick={() => setColor(c)}
-              className={`h-8 w-8 rounded-full ${COLOR_CLASSES[c].bg} ${
-                color === c ? `ring-2 ring-offset-2 ${COLOR_CLASSES[c].ring}` : ""
-              }`}
+              className="flex h-11 w-11 items-center justify-center transition active:scale-90"
               aria-label={c}
-            />
+            >
+              <span
+                className={`h-8 w-8 rounded-full transition ${COLOR_CLASSES[c].bg} ${
+                  color === c ? `ring-2 ring-offset-2 ${COLOR_CLASSES[c].ring}` : ""
+                }`}
+              />
+            </button>
           ))}
         </div>
         <button
           type="submit"
           disabled={!name.trim()}
-          className="w-full rounded-xl bg-blush-500 py-3 font-bold text-white disabled:opacity-50"
+          className="w-full rounded-xl bg-blush-500 py-3 font-bold text-white transition active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
         >
           C&apos;est parti
         </button>

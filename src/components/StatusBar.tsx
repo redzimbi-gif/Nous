@@ -54,7 +54,7 @@ export default function StatusBar() {
     <div className="relative flex items-center gap-2 border-b border-blush-100 bg-white px-4 py-1.5 text-xs">
       <button
         onClick={() => setPickerOpen((v) => !v)}
-        className="flex items-center gap-1 rounded-full bg-blush-50 px-2.5 py-1 font-semibold text-blush-600"
+        className="flex items-center gap-1 rounded-full bg-blush-50 px-2.5 py-1.5 font-semibold text-blush-600 transition active:scale-95"
       >
         <span className="text-base">{moodEmoji(mine?.mood)}</span>
         Toi
@@ -75,13 +75,13 @@ export default function StatusBar() {
             className="fixed inset-0 z-40"
             onClick={() => setPickerOpen(false)}
           />
-          <div className="absolute left-4 top-full z-50 mt-1 grid grid-cols-4 gap-1 rounded-2xl bg-white p-2 shadow-lg">
+          <div className="absolute left-4 top-full z-50 mt-1 grid origin-top-left grid-cols-4 gap-1 rounded-2xl bg-white p-2 shadow-lg animate-pop-in">
             {MOODS.map((m) => (
               <button
                 key={m.value}
                 onClick={() => setMood(m.value)}
                 title={m.label}
-                className="flex h-11 w-11 items-center justify-center rounded-xl text-2xl hover:bg-blush-50"
+                className="flex h-11 w-11 items-center justify-center rounded-xl text-2xl transition hover:bg-blush-50 active:scale-90"
               >
                 {m.emoji}
               </button>
