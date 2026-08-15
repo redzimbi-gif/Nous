@@ -73,6 +73,12 @@ export type StatusRow = {
   updated_at: string;
 };
 
+export type PresenceRow = {
+  name: string;
+  online: boolean;
+  updated_at: string;
+};
+
 export type RefRow = {
   id: string;
   title: string;

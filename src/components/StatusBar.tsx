@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
-import type { StatusRow, Mood } from "@/lib/types";
+import type { Mood, PresenceRow, StatusRow } from "@/lib/types";
 import { MOODS, moodEmoji } from "@/lib/moods";
+import { PRESENCE_HEARTBEAT_MS, isPresenceOnline } from "@/lib/presence";
 
 export default function StatusBar() {
   const { name } = useIdentity();
   const [statuses, setStatuses] = useState<StatusRow[]>([]);
+  const [presence, setPresence] = useState<PresenceRow[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
@@ -19,7 +21,7 @@ export default function StatusBar() {
         if (data) setStatuses(data);
       });
 
-    const channel = supabase
+    const statusChannel = supabase
       .channel("statuses-realtime")
       .on(
         "postgres_changes",
@@ -33,12 +35,71 @@ export default function StatusBar() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(statusChannel);
     };
   }, []);
 
+  useEffect(() => {
+    supabase
+      .from("presence")
+      .select("*")
+      .then(({ data }) => {
+        if (data) setPresence(data);
+      });
+
+    const presenceChannel = supabase
+      .channel("presence-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "presence" },
+        (payload) => {
+          if (payload.eventType === "DELETE") return;
+          const row = payload.new as PresenceRow;
+          setPresence((prev) => [...prev.filter((p) => p.name !== row.name), row]);
+        }
+      )
+      .subscribe();
+
+    async function setOnline(online: boolean) {
+      await supabase
+        .from("presence")
+        .upsert({ name, online, updated_at: new Date().toISOString() });
+    }
+
+    setOnline(document.visibilityState === "visible");
+
+    function handleVisibility() {
+      setOnline(document.visibilityState === "visible");
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    const heartbeat = setInterval(() => {
+      if (document.visibilityState === "visible") setOnline(true);
+    }, PRESENCE_HEARTBEAT_MS);
+
+    function handlePageHide() {
+      navigator.sendBeacon?.(
+        "/api/presence-offline",
+        new Blob([JSON.stringify({ name })], { type: "application/json" })
+      );
+    }
+    window.addEventListener("pagehide", handlePageHide);
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pagehide", handlePageHide);
+      clearInterval(heartbeat);
+    };
+  }, [name]);
+
   const mine = statuses.find((s) => s.name === name);
-  const others = statuses.filter((s) => s.name !== name);
+  const otherNames = Array.from(
+    new Set([
+      ...statuses.filter((s) => s.name !== name).map((s) => s.name),
+      ...presence.filter((p) => p.name !== name).map((p) => p.name),
+    ])
+  );
 
   async function setMood(mood: Mood) {
     setPickerOpen(false);
@@ -50,6 +111,8 @@ export default function StatusBar() {
     if (data) setStatuses((prev) => [...prev.filter((s) => s.name !== name), data]);
   }
 
+  const myOnline = isPresenceOnline(presence.find((p) => p.name === name));
+
   return (
     <div className="relative flex items-center gap-2 border-b border-blush-100 bg-white px-4 py-1.5 text-xs">
       <button
@@ -58,16 +121,22 @@ export default function StatusBar() {
       >
         <span className="text-base">{moodEmoji(mine?.mood)}</span>
         Toi
+        <span title={myOnline ? "En ligne" : "Hors ligne"}>{myOnline ? "🟢" : "⚪"}</span>
       </button>
-      {others.map((s) => (
-        <span
-          key={s.name}
-          className="flex items-center gap-1 rounded-full bg-blush-50 px-2.5 py-1 text-blush-400"
-        >
-          <span className="text-base">{moodEmoji(s.mood)}</span>
-          {s.name}
-        </span>
-      ))}
+      {otherNames.map((otherName) => {
+        const status = statuses.find((s) => s.name === otherName);
+        const online = isPresenceOnline(presence.find((p) => p.name === otherName));
+        return (
+          <span
+            key={otherName}
+            className="flex items-center gap-1 rounded-full bg-blush-50 px-2.5 py-1 text-blush-400"
+          >
+            <span className="text-base">{moodEmoji(status?.mood)}</span>
+            {otherName}
+            <span title={online ? "En ligne" : "Hors ligne"}>{online ? "🟢" : "⚪"}</span>
+          </span>
+        );
+      })}
 
       {pickerOpen && (
         <>
