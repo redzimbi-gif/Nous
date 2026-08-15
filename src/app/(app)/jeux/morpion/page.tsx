@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import type { TicTacToeGame } from "@/lib/types";
 import { calculateWinner, isBoardFull, EMPTY_BOARD } from "@/lib/tictactoe";
+import GameReactions from "@/components/GameReactions";
 
 export default function MorpionPage() {
   const { name } = useIdentity();
@@ -115,12 +116,15 @@ export default function MorpionPage() {
           </Link>
           <h1 className="text-lg font-extrabold text-blush-700">✕⭕ Morpion</h1>
         </div>
-        <button
-          onClick={startNewGame}
-          className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white"
-        >
-          Nouvelle partie
-        </button>
+        <div className="flex items-center gap-2">
+          <GameReactions gameKey="tictactoe" />
+          <button
+            onClick={startNewGame}
+            className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white"
+          >
+            Nouvelle partie
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6">

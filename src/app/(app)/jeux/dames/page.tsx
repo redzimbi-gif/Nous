@@ -16,6 +16,7 @@ import {
   type CheckersMove,
   type CheckersPos,
 } from "@/lib/checkers";
+import GameReactions from "@/components/GameReactions";
 
 export default function DamesPage() {
   const { name } = useIdentity();
@@ -174,12 +175,15 @@ export default function DamesPage() {
           </Link>
           <h1 className="text-lg font-extrabold text-blush-700">⚫⚪ Dames</h1>
         </div>
-        <button
-          onClick={startNewGame}
-          className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white"
-        >
-          Nouvelle partie
-        </button>
+        <div className="flex items-center gap-2">
+          <GameReactions gameKey="dames" />
+          <button
+            onClick={startNewGame}
+            className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white"
+          >
+            Nouvelle partie
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col items-center gap-3 px-4 py-6">

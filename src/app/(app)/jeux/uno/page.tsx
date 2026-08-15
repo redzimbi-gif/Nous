@@ -13,6 +13,7 @@ import {
   dealNewGame,
   effectOf,
 } from "@/lib/uno";
+import GameReactions from "@/components/GameReactions";
 
 const COLOR_ORDER: UnoColor[] = ["red", "yellow", "green", "blue"];
 
@@ -192,12 +193,15 @@ export default function UnoPage() {
           </Link>
           <h1 className="text-lg font-extrabold text-blush-700">🎴 Uno</h1>
         </div>
-        <button
-          onClick={startNewGame}
-          className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white transition active:scale-95"
-        >
-          Nouvelle partie
-        </button>
+        <div className="flex items-center gap-2">
+          <GameReactions gameKey="uno" />
+          <button
+            onClick={startNewGame}
+            className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white transition active:scale-95"
+          >
+            Nouvelle partie
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col items-center gap-3 px-4 py-4">

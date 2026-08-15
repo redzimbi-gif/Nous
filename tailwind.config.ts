@@ -33,10 +33,17 @@ const config: Config = {
           "0%": { opacity: "0", transform: "scale(0.92)" },
           "100%": { opacity: "1", transform: "scale(1)" },
         },
+        "float-up": {
+          "0%": { opacity: "0", transform: "translateY(0) scale(0.5)" },
+          "15%": { opacity: "1", transform: "translateY(-10px) scale(1.15)" },
+          "80%": { opacity: "1", transform: "translateY(-100px) scale(1)" },
+          "100%": { opacity: "0", transform: "translateY(-130px) scale(0.9)" },
+        },
       },
       animation: {
         shake: "shake 0.5s",
         "pop-in": "pop-in 0.15s ease-out",
+        "float-up": "float-up 1.6s ease-out forwards",
       },
     },
   },

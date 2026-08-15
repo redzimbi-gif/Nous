@@ -18,6 +18,7 @@ import {
   sunkShips,
   type Orientation,
 } from "@/lib/battleship";
+import GameReactions from "@/components/GameReactions";
 
 export default function BatailleNavalePage() {
   const { name } = useIdentity();
@@ -188,12 +189,15 @@ export default function BatailleNavalePage() {
           </Link>
           <h1 className="text-lg font-extrabold text-blush-700">🚢 Bataille navale</h1>
         </div>
-        <button
-          onClick={startNewGame}
-          className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white"
-        >
-          Nouvelle partie
-        </button>
+        <div className="flex items-center gap-2">
+          <GameReactions gameKey="bataille" />
+          <button
+            onClick={startNewGame}
+            className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white"
+          >
+            Nouvelle partie
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col items-center gap-3 px-4 py-6">
