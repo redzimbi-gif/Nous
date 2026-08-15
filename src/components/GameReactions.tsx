@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 const REACTION_EMOJIS = ["😂", "😮", "🔥", "👏", "😡", "😭", "😏", "❤️"];
+const MIN_GAP = 18;
 
 type FloatingReaction = { id: string; emoji: string; x: number };
 
@@ -27,10 +28,19 @@ export default function GameReactions({ gameKey }: { gameKey: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameKey]);
 
+  function pickX(existing: number[]): number {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const candidate = 12 + Math.random() * 76;
+      if (existing.every((x) => Math.abs(x - candidate) >= MIN_GAP)) {
+        return candidate;
+      }
+    }
+    return 12 + Math.random() * 76;
+  }
+
   function spawn(emoji: string) {
     const id = crypto.randomUUID();
-    const x = 15 + Math.random() * 70;
-    setFloating((prev) => [...prev, { id, emoji, x }]);
+    setFloating((prev) => [...prev, { id, emoji, x: pickX(prev.map((f) => f.x)) }]);
     setTimeout(() => {
       setFloating((prev) => prev.filter((f) => f.id !== id));
     }, 1600);
