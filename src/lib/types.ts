@@ -71,3 +71,22 @@ export type RefRow = {
   created_by: string;
   created_at: string;
 };
+
+export type CheckersPlayer = "A" | "B";
+
+export type CheckersPiece = {
+  player: CheckersPlayer;
+  king: boolean;
+};
+
+export type CheckersBoard = (CheckersPiece | null)[][];
+
+export type CheckersGame = {
+  id: string;
+  board: CheckersBoard;
+  turn: CheckersPlayer;
+  a_name: string;
+  b_name: string | null;
+  winner: CheckersPlayer | null;
+  created_at: string;
+};
