@@ -167,3 +167,17 @@ export type UnoGame = {
   winner: "A" | "B" | null;
   created_at: string;
 };
+
+export type Connect4Player = "A" | "B";
+export type Connect4Cell = Connect4Player | null;
+export type Connect4Board = Connect4Cell[][];
+
+export type Connect4Game = {
+  id: string;
+  board: Connect4Board;
+  turn: Connect4Player;
+  a_name: string;
+  b_name: string | null;
+  winner: Connect4Player | "draw" | null;
+  created_at: string;
+};

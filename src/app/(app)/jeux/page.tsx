@@ -25,6 +25,12 @@ const GAMES = [
     label: "Uno",
     desc: "Le classique en 2 joueurs",
   },
+  {
+    href: "/jeux/puissance4",
+    icon: "🔴🟡",
+    label: "Puissance 4",
+    desc: "Aligne 4 pions avant l'autre",
+  },
 ];
 
 export default function JeuxPage() {

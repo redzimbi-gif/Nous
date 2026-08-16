@@ -24,7 +24,7 @@ export default function MessageBubble({
   onOpenRef: (ref: RefRow) => void;
 }) {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
-  const [refImgUrl, setRefImgUrl] = useState<string | null>(null);
+  const [refMediaUrl, setRefMediaUrl] = useState<string | null>(null);
   const classes = COLOR_CLASSES[color] ?? COLOR_CLASSES.blush;
 
   useEffect(() => {
@@ -42,13 +42,13 @@ export default function MessageBubble({
   }, [photo]);
 
   useEffect(() => {
-    if (!refItem?.media_path || refItem.media_type !== "image") return;
+    if (!refItem?.media_path) return;
     let active = true;
     supabase.storage
       .from(REFS_BUCKET)
       .createSignedUrl(refItem.media_path, 3600)
       .then(({ data }) => {
-        if (active) setRefImgUrl(data?.signedUrl ?? null);
+        if (active) setRefMediaUrl(data?.signedUrl ?? null);
       });
     return () => {
       active = false;
@@ -88,22 +88,38 @@ export default function MessageBubble({
           ))}
         {message.ref_id &&
           (refItem ? (
-            <button
-              onClick={() => onOpenRef(refItem)}
-              className={`flex w-full items-center gap-2 rounded-2xl p-2 text-left transition active:scale-[0.98] ${overlayBg}`}
-            >
-              {refItem.media_type === "image" && refImgUrl ? (
-                <img src={refImgUrl} alt="" className="h-12 w-12 rounded-xl object-cover" />
+            refItem.media_path && !refItem.link ? (
+              refItem.media_type === "video" ? (
+                refMediaUrl && (
+                  <video
+                    src={refMediaUrl}
+                    controls
+                    className="mb-1 max-h-64 w-full rounded-2xl object-cover"
+                  />
+                )
+              ) : refMediaUrl ? (
+                <img
+                  src={refMediaUrl}
+                  alt=""
+                  className="mb-1 max-h-64 w-full rounded-2xl object-cover"
+                />
               ) : (
+                <div className="mb-1 h-40 w-full animate-pulse rounded-2xl bg-black/10" />
+              )
+            ) : (
+              <button
+                onClick={() => onOpenRef(refItem)}
+                className={`flex w-full items-center gap-2 rounded-2xl p-2 text-left transition active:scale-[0.98] ${overlayBg}`}
+              >
                 <span className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl ${overlayBg}`}>
-                  {refItem.media_type === "video" ? "🎬" : "🔖"}
+                  🔗
                 </span>
-              )}
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-bold">{refItem.title}</span>
-                <span className="block text-xs opacity-70">Ouvrir la ref</span>
-              </span>
-            </button>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold">{refItem.title}</span>
+                  <span className="block text-xs opacity-70">Ouvrir la ref</span>
+                </span>
+              </button>
+            )
           ) : (
             <div className={`flex items-center gap-2 rounded-2xl p-2 text-sm opacity-70 ${overlayBg}`}>
               🔖 Ref supprimée
