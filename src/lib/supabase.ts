@@ -10,11 +10,12 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   realtime: {
     params: { eventsPerSecond: 10 },
   },
-  // Force le vrai fetch du navigateur : avec Next.js 16 + Turbopack, la lib
-  // Supabase peut sinon embarquer un polyfill fetch/Headers moins tolérant,
-  // qui plante sur des requêtes que le navigateur gère très bien seul.
+  // Force le vrai fetch du navigateur, appelé via globalThis pour garder le
+  // bon "this" : un appel nu (juste "fetch(...)") perd son contexte une fois
+  // réassigné dans un module en mode strict, ce qui fait planter certaines
+  // implémentations de fetch patchées ("Illegal invocation").
   global: {
-    fetch: (...args: Parameters<typeof fetch>) => fetch(...args),
+    fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args),
   },
 });
 
