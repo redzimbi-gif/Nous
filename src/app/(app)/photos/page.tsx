@@ -1,10 +1,37 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase, PHOTOS_BUCKET } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import type { PhotoRow } from "@/lib/types";
 import Lightbox from "@/components/Lightbox";
+
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function dateGroupLabel(date: Date): string {
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (isSameDay(date, today)) return "Aujourd'hui";
+  if (isSameDay(date, yesterday)) return "Hier";
+  return date.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+type PhotoGroup = {
+  key: string;
+  label: string;
+  items: { photo: PhotoRow; index: number }[];
+};
 
 export default function PhotosPage() {
   const { name } = useIdentity();
@@ -39,6 +66,21 @@ export default function PhotosPage() {
   useEffect(() => {
     load();
   }, []);
+
+  const groups = useMemo<PhotoGroup[]>(() => {
+    const result: PhotoGroup[] = [];
+    photos.forEach((photo, index) => {
+      const d = new Date(photo.created_at);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      const last = result[result.length - 1];
+      if (last && last.key === key) {
+        last.items.push({ photo, index });
+      } else {
+        result.push({ key, label: dateGroupLabel(d), items: [{ photo, index }] });
+      }
+    });
+    return result;
+  }, [photos]);
 
   async function handleFiles(files: FileList) {
     setUploading(true);
@@ -101,23 +143,30 @@ export default function PhotosPage() {
             Aucune photo pour l&apos;instant 🤍
           </p>
         ) : (
-          <div className="grid grid-cols-3 gap-1">
-            {photos.map((p, i) => (
-              <button
-                key={p.id}
-                onClick={() => setSelectedIndex(i)}
-                className="aspect-square overflow-hidden rounded-lg bg-blush-100 transition active:scale-95"
-              >
-                {urls[p.storage_path] && (
-                  <img
-                    src={urls[p.storage_path]}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                )}
-              </button>
-            ))}
-          </div>
+          groups.map((group) => (
+            <div key={group.key} className="mb-3">
+              <h2 className="mb-1.5 mt-2 px-1 text-sm font-bold text-blush-400">
+                {group.label}
+              </h2>
+              <div className="grid grid-cols-3 gap-1">
+                {group.items.map(({ photo: p, index: i }) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setSelectedIndex(i)}
+                    className="aspect-square overflow-hidden rounded-lg bg-blush-100 transition active:scale-95"
+                  >
+                    {urls[p.storage_path] && (
+                      <img
+                        src={urls[p.storage_path]}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))
         )}
       </div>
 
