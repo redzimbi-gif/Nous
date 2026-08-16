@@ -82,6 +82,11 @@ export type PresenceRow = {
   updated_at: string;
 };
 
+export type ChatReadRow = {
+  name: string;
+  last_read_at: string;
+};
+
 export type RefRow = {
   id: string;
   title: string;

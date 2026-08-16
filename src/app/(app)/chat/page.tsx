@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase, PHOTOS_BUCKET, REFS_BUCKET, VOICES_BUCKET } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
-import type { MessageRow, PhotoRow, RefRow } from "@/lib/types";
+import type { ChatReadRow, MessageRow, PhotoRow, RefRow } from "@/lib/types";
 import MessageBubble from "@/components/MessageBubble";
 import MessageActions from "@/components/MessageActions";
 import RefPicker from "@/components/RefPicker";
@@ -15,6 +15,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [photos, setPhotos] = useState<Record<string, PhotoRow>>({});
   const [refs, setRefs] = useState<Record<string, RefRow>>({});
+  const [reads, setReads] = useState<Record<string, string>>({});
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [view, setView] = useState<"chat" | "canards">("chat");
@@ -111,6 +112,60 @@ export default function ChatPage() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  useEffect(() => {
+    supabase
+      .from("chat_reads")
+      .select("*")
+      .then(({ data }) => {
+        if (!data) return;
+        const map: Record<string, string> = {};
+        data.forEach((r) => (map[r.name] = r.last_read_at));
+        setReads(map);
+      });
+
+    const channel = supabase
+      .channel("chat-reads-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "chat_reads" },
+        (payload) => {
+          if (payload.eventType === "DELETE") return;
+          const row = payload.new as ChatReadRow;
+          setReads((prev) => ({ ...prev, [row.name]: row.last_read_at }));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    function markRead() {
+      if (view !== "chat" || document.visibilityState !== "visible") return;
+      supabase.from("chat_reads").upsert({ name, last_read_at: new Date().toISOString() });
+    }
+    markRead();
+    document.addEventListener("visibilitychange", markRead);
+    return () => document.removeEventListener("visibilitychange", markRead);
+  }, [messages, view, name]);
+
+  const lastSeenId = useMemo(() => {
+    const otherTimes = Object.entries(reads)
+      .filter(([n]) => n !== name)
+      .map(([, t]) => new Date(t).getTime());
+    if (!otherTimes.length) return null;
+    const otherReadAt = Math.max(...otherTimes);
+    let result: string | null = null;
+    for (const m of messages) {
+      if (m.sender_name === name && new Date(m.created_at).getTime() <= otherReadAt) {
+        result = m.id;
+      }
+    }
+    return result;
+  }, [messages, reads, name]);
 
   useEffect(() => {
     if (view === "chat") bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -378,6 +433,7 @@ export default function ChatPage() {
             refItem={m.ref_id ? refs[m.ref_id] : undefined}
             isMine={m.sender_name === name}
             color={color}
+            seen={view === "chat" && m.id === lastSeenId}
             onOpenActions={() => setActiveMessage(m)}
             onOpenRef={openRef}
           />

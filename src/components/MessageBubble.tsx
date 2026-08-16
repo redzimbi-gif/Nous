@@ -12,6 +12,7 @@ export default function MessageBubble({
   refItem,
   isMine,
   color,
+  seen,
   onOpenActions,
   onOpenRef,
 }: {
@@ -20,6 +21,7 @@ export default function MessageBubble({
   refItem?: RefRow;
   isMine: boolean;
   color: string;
+  seen?: boolean;
   onOpenActions: () => void;
   onOpenRef: (ref: RefRow) => void;
 }) {
@@ -135,6 +137,9 @@ export default function MessageBubble({
       <div className="mt-0.5 flex items-center gap-1.5 px-2">
         {message.saved && <span className="text-[11px]">🦆</span>}
         <span className="text-[10px] text-blush-300">{time}</span>
+        {isMine && seen && (
+          <span className="text-[10px] font-semibold text-blush-300">Vu</span>
+        )}
         <button
           onClick={onOpenActions}
           className="flex h-5 w-5 items-center justify-center text-blush-200 transition hover:text-blush-400 active:scale-90"
