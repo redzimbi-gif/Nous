@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { supabase, PHOTOS_BUCKET } from "@/lib/supabase";
+import { supabase, PHOTOS_BUCKET, REFS_BUCKET, VOICES_BUCKET } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import type { MessageRow, PhotoRow, RefRow } from "@/lib/types";
 import MessageBubble from "@/components/MessageBubble";
 import MessageActions from "@/components/MessageActions";
 import RefPicker from "@/components/RefPicker";
+import RefDetail from "@/components/RefDetail";
 import { sendNotification } from "@/lib/notify";
 
 export default function ChatPage() {
@@ -19,8 +20,16 @@ export default function ChatPage() {
   const [view, setView] = useState<"chat" | "canards">("chat");
   const [activeMessage, setActiveMessage] = useState<MessageRow | null>(null);
   const [refPickerOpen, setRefPickerOpen] = useState(false);
+  const [viewingRef, setViewingRef] = useState<RefRow | null>(null);
+  const [viewingRefUrl, setViewingRefUrl] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -107,8 +116,26 @@ export default function ChatPage() {
     if (view === "chat") bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, view]);
 
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
   function notify(preview: string) {
     sendNotification({ senderName: name, title: `💬 ${name}`, body: preview, url: "/chat" });
+  }
+
+  async function openRef(ref: RefRow) {
+    setViewingRef(ref);
+    setViewingRefUrl(null);
+    if (ref.media_path) {
+      const { data } = await supabase.storage
+        .from(REFS_BUCKET)
+        .createSignedUrl(ref.media_path, 3600);
+      setViewingRefUrl(data?.signedUrl ?? null);
+    }
   }
 
   async function sendText() {
@@ -164,6 +191,94 @@ export default function ChatPage() {
     } else if (row) {
       setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
       notify("📷 a envoyé une photo");
+    }
+    setSending(false);
+  }
+
+  async function startRecording() {
+    if (typeof MediaRecorder === "undefined") {
+      alert("Les messages vocaux ne sont pas pris en charge par ce navigateur.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const recorder = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setRecording(true);
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((s) => s + 1);
+      }, 1000);
+    } catch {
+      alert("Impossible d'accéder au micro — vérifie les autorisations du navigateur.");
+    }
+  }
+
+  function stopStream() {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  }
+
+  function cancelRecording() {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.onstop = stopStream;
+      recorder.stop();
+    } else {
+      stopStream();
+    }
+    audioChunksRef.current = [];
+    setRecording(false);
+    setRecordingSeconds(0);
+  }
+
+  function stopAndSendRecording() {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state === "inactive") return;
+    recorder.onstop = () => {
+      const mimeType = recorder.mimeType || "audio/webm";
+      const blob = new Blob(audioChunksRef.current, { type: mimeType });
+      audioChunksRef.current = [];
+      stopStream();
+      sendVoice(blob, mimeType);
+    };
+    recorder.stop();
+    setRecording(false);
+    setRecordingSeconds(0);
+  }
+
+  async function sendVoice(blob: Blob, mimeType: string) {
+    setSending(true);
+    const ext = mimeType.includes("mp4") ? "m4a" : mimeType.includes("ogg") ? "ogg" : "webm";
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from(VOICES_BUCKET)
+      .upload(path, blob, { contentType: mimeType });
+    if (uploadError) {
+      alert("Message vocal non envoyé : " + uploadError.message);
+      setSending(false);
+      return;
+    }
+    const { data: row, error } = await supabase
+      .from("messages")
+      .insert({ sender_name: name, audio_path: path })
+      .select()
+      .single();
+    if (error) {
+      alert("Message vocal non envoyé : " + error.message);
+    } else if (row) {
+      setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+      notify("🎤 a envoyé un message vocal");
     }
     setSending(false);
   }
@@ -264,6 +379,7 @@ export default function ChatPage() {
             isMine={m.sender_name === name}
             color={color}
             onOpenActions={() => setActiveMessage(m)}
+            onOpenRef={openRef}
           />
         ))}
         <div ref={bottomRef} />
@@ -288,35 +404,75 @@ export default function ChatPage() {
               e.target.value = "";
             }}
           />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={sending}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-100 text-xl transition active:scale-90 disabled:opacity-50 disabled:active:scale-100"
-          >
-            📷
-          </button>
-          <button
-            type="button"
-            onClick={() => setRefPickerOpen(true)}
-            disabled={sending}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-100 text-xl transition active:scale-90 disabled:opacity-50 disabled:active:scale-100"
-          >
-            🔖
-          </button>
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Écris un message…"
-            className="flex-1 rounded-full border-2 border-blush-100 bg-blush-50 px-4 py-2.5 outline-none transition focus:border-blush-300 focus-visible:ring-2 focus-visible:ring-blush-200"
-          />
-          <button
-            type="submit"
-            disabled={!text.trim()}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-500 text-white transition active:scale-90 disabled:opacity-50 disabled:active:scale-100"
-          >
-            ➤
-          </button>
+          {recording ? (
+            <>
+              <button
+                type="button"
+                onClick={cancelRecording}
+                aria-label="Annuler l'enregistrement"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-100 text-lg text-blush-500 transition active:scale-90"
+              >
+                ✕
+              </button>
+              <div className="flex flex-1 items-center gap-2 rounded-full border-2 border-blush-100 bg-blush-50 px-4 py-2.5">
+                <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-red-500" />
+                <span className="text-sm font-semibold text-blush-600">
+                  {Math.floor(recordingSeconds / 60)}:{String(recordingSeconds % 60).padStart(2, "0")}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={stopAndSendRecording}
+                aria-label="Envoyer le message vocal"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-500 text-white transition active:scale-90"
+              >
+                ➤
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-100 text-xl transition active:scale-90 disabled:opacity-50 disabled:active:scale-100"
+              >
+                📷
+              </button>
+              <button
+                type="button"
+                onClick={() => setRefPickerOpen(true)}
+                disabled={sending}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-100 text-xl transition active:scale-90 disabled:opacity-50 disabled:active:scale-100"
+              >
+                🔖
+              </button>
+              <input
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Écris un message…"
+                className="flex-1 rounded-full border-2 border-blush-100 bg-blush-50 px-4 py-2.5 outline-none transition focus:border-blush-300 focus-visible:ring-2 focus-visible:ring-blush-200"
+              />
+              {text.trim() ? (
+                <button
+                  type="submit"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-500 text-white transition active:scale-90"
+                >
+                  ➤
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startRecording}
+                  disabled={sending}
+                  aria-label="Enregistrer un message vocal"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-500 text-lg text-white transition active:scale-90 disabled:opacity-50 disabled:active:scale-100"
+                >
+                  🎤
+                </button>
+              )}
+            </>
+          )}
         </form>
       )}
 
@@ -331,6 +487,17 @@ export default function ChatPage() {
 
       {refPickerOpen && (
         <RefPicker onClose={() => setRefPickerOpen(false)} onSelect={sendRef} />
+      )}
+
+      {viewingRef && (
+        <RefDetail
+          item={viewingRef}
+          url={viewingRefUrl ?? undefined}
+          onClose={() => {
+            setViewingRef(null);
+            setViewingRefUrl(null);
+          }}
+        />
       )}
     </div>
   );

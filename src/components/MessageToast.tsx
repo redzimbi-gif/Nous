@@ -35,9 +35,11 @@ export default function MessageToast() {
             ? row.content
             : row.photo_id
               ? "📷 a envoyé une photo"
-              : row.ref_id
-                ? "🔖 a partagé une ref"
-                : "";
+              : row.audio_path
+                ? "🎤 a envoyé un message vocal"
+                : row.ref_id
+                  ? "🔖 a partagé une ref"
+                  : "";
 
           if (timeoutRef.current) clearTimeout(timeoutRef.current);
           setToast({ sender: row.sender_name, preview });

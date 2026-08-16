@@ -12,6 +12,7 @@ export type MessageRow = {
   content: string | null;
   photo_id: string | null;
   ref_id: string | null;
+  audio_path: string | null;
   saved: boolean;
   created_at: string;
 };

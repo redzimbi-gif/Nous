@@ -1,0 +1,85 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { supabase, VOICES_BUCKET } from "@/lib/supabase";
+
+export default function VoiceMessage({
+  path,
+  tone,
+}: {
+  path: string;
+  tone: "mine" | "theirs";
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    supabase.storage
+      .from(VOICES_BUCKET)
+      .createSignedUrl(path, 3600)
+      .then(({ data }) => {
+        if (active) setUrl(data?.signedUrl ?? null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [path]);
+
+  function toggle() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playing) audio.pause();
+    else audio.play();
+  }
+
+  function formatTime(seconds: number) {
+    const total = Math.floor(seconds);
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+  }
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const isMine = tone === "mine";
+
+  return (
+    <div className="flex min-w-[190px] items-center gap-2 py-0.5">
+      {url && (
+        <audio
+          ref={audioRef}
+          src={url}
+          preload="metadata"
+          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
+          onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => {
+            setPlaying(false);
+            setCurrentTime(0);
+          }}
+        />
+      )}
+      <button
+        onClick={toggle}
+        disabled={!url}
+        aria-label={playing ? "Mettre en pause" : "Écouter"}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm transition active:scale-90 disabled:opacity-50 ${
+          isMine ? "bg-white/20" : "bg-blush-50"
+        }`}
+      >
+        {playing ? "⏸" : "▶️"}
+      </button>
+      <div className={`h-1.5 flex-1 overflow-hidden rounded-full ${isMine ? "bg-white/30" : "bg-blush-100"}`}>
+        <div
+          className={`h-full rounded-full ${isMine ? "bg-white" : "bg-blush-500"}`}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <span className="shrink-0 text-[11px] tabular-nums opacity-80">
+        {formatTime(currentTime || duration)}
+      </span>
+    </div>
+  );
+}
