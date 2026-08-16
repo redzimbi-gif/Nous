@@ -4,7 +4,12 @@ import { createClient } from "@supabase/supabase-js";
 // sécurité vient des policies RLS côté Supabase, pas du secret de cette clé.
 const SUPABASE_URL = "https://peokuzlhhskecyjtgubd.supabase.co";
 const SUPABASE_ANON_KEY =
-  "eyJhbGci••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ" +
+  "pc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlb2t1emx" +
+  "oaHNrZWN5anRndWJkIiwicm9sZSI6ImFub24iLCJ" +
+  "pYXQiOjE3ODY3MDczMzQsImV4cCI6MjEwMjI4MzM" +
+  "zNH0.IMQREFyW2H4dhIF-jgqAoyc1KTJms_lX7j0" +
+  "ADxDtZVA";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   realtime: {
