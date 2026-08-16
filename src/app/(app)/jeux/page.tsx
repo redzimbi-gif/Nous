@@ -31,6 +31,12 @@ const GAMES = [
     label: "Puissance 4",
     desc: "Aligne 4 pions avant l'autre",
   },
+  {
+    href: "/jeux/motus",
+    icon: "🔤",
+    label: "Motus",
+    desc: "Devine le mot en 6 essais, à deux",
+  },
 ];
 
 export default function JeuxPage() {

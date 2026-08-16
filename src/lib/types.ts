@@ -186,3 +186,19 @@ export type Connect4Game = {
   winner: Connect4Player | "draw" | null;
   created_at: string;
 };
+
+export type GuessWordAttempt = {
+  word: string;
+  by: "A" | "B";
+};
+
+export type GuessWordGame = {
+  id: string;
+  word: string;
+  guesses: GuessWordAttempt[];
+  turn: "A" | "B";
+  a_name: string;
+  b_name: string | null;
+  winner: "A" | "B" | "draw" | null;
+  created_at: string;
+};
