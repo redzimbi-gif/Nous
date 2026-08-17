@@ -121,13 +121,18 @@ export default function StatusBar() {
   const myOnline = isPresenceOnline(presence.find((p) => p.name === name));
 
   return (
-    <div className="relative flex items-center gap-2 border-b border-blush-100 bg-white px-4 py-1.5 text-xs">
+    <div className="relative flex items-center gap-2 border-b border-blush-100 bg-white px-4 py-2 text-xs">
       <button
         onClick={() => setPickerOpen((v) => !v)}
-        className="flex items-center gap-1 rounded-full bg-blush-50 px-2.5 py-1.5 font-semibold text-blush-600 transition active:scale-95"
+        className="flex items-center gap-2 rounded-full bg-blush-50 py-1.5 pl-2 pr-3 font-semibold text-blush-600 transition active:scale-95"
       >
-        <span className="text-base">{moodEmoji(mine?.mood)}</span>
-        Toi
+        <span className="text-2xl leading-none">{moodEmoji(mine?.mood)}</span>
+        <span className="flex flex-col items-start leading-tight">
+          <span>Toi</span>
+          <span className="text-[10px] font-normal text-blush-400">
+            {moodLabel(mine?.mood)}
+          </span>
+        </span>
         <span title={myOnline ? "En ligne" : "Hors ligne"}>{myOnline ? "🟢" : "⚪"}</span>
       </button>
       {otherNames.map((otherName) => {
@@ -136,10 +141,13 @@ export default function StatusBar() {
         return (
           <span
             key={otherName}
-            className="flex items-center gap-1 rounded-full bg-blush-50 px-2.5 py-1 text-blush-400"
+            className="flex items-center gap-2 rounded-full bg-blush-50 py-1.5 pl-2 pr-3"
           >
-            <span className="text-base">{moodEmoji(status?.mood)}</span>
-            {otherName}
+            <span className="text-2xl leading-none">{moodEmoji(status?.mood)}</span>
+            <span className="flex flex-col items-start leading-tight">
+              <span className="font-semibold text-blush-600">{otherName}</span>
+              <span className="text-[10px] text-blush-400">{moodLabel(status?.mood)}</span>
+            </span>
             <span title={online ? "En ligne" : "Hors ligne"}>{online ? "🟢" : "⚪"}</span>
           </span>
         );
@@ -151,15 +159,17 @@ export default function StatusBar() {
             className="fixed inset-0 z-40"
             onClick={() => setPickerOpen(false)}
           />
-          <div className="absolute left-4 top-full z-50 mt-1 grid origin-top-left grid-cols-4 gap-1 rounded-2xl bg-white p-2 shadow-lg animate-pop-in">
+          <div className="absolute left-4 top-full z-50 mt-1 grid w-72 origin-top-left grid-cols-4 gap-1 rounded-2xl bg-white p-2 shadow-lg animate-pop-in">
             {MOODS.map((m) => (
               <button
                 key={m.value}
                 onClick={() => setMood(m.value)}
-                title={m.label}
-                className="flex h-11 w-11 items-center justify-center rounded-xl text-2xl transition hover:bg-blush-50 active:scale-90"
+                className="flex flex-col items-center gap-0.5 rounded-xl py-2 transition hover:bg-blush-50 active:scale-90"
               >
-                {m.emoji}
+                <span className="text-2xl leading-none">{m.emoji}</span>
+                <span className="text-center text-[9px] font-semibold leading-tight text-blush-500">
+                  {m.label}
+                </span>
               </button>
             ))}
           </div>

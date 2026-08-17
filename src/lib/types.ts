@@ -63,12 +63,20 @@ export type TodoRow = {
 export type Mood =
   | "content"
   | "amoureux"
+  | "excite"
+  | "motive"
+  | "calin"
+  | "fier"
+  | "zen"
   | "fatigue"
+  | "ennuye"
+  | "occupe"
+  | "affame"
   | "stresse"
+  | "anxieux"
   | "triste"
   | "en_colere"
-  | "malade"
-  | "zen";
+  | "malade";
 
 export type StatusRow = {
   name: string;
