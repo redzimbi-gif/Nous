@@ -17,7 +17,9 @@ export default function ChatPage() {
   const [refs, setRefs] = useState<Record<string, RefRow>>({});
   const [reads, setReads] = useState<Record<string, string>>({});
   const [text, setText] = useState("");
-  const [sending, setSending] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<Record<string, "sending" | "failed">>({});
+  const [pendingKinds, setPendingKinds] = useState<Record<string, "photo" | "voice">>({});
+  const retryFns = useRef<Record<string, () => void>>({});
   const [view, setView] = useState<"chat" | "canards">("chat");
   const [activeMessage, setActiveMessage] = useState<MessageRow | null>(null);
   const [refPickerOpen, setRefPickerOpen] = useState(false);
@@ -193,61 +195,102 @@ export default function ChatPage() {
     }
   }
 
-  async function sendText() {
-    const content = text.trim();
+  function resolveDraft(localId: string, row: MessageRow) {
+    setMessages((prev) => prev.map((m) => (m.id === localId ? row : m)));
+    setPendingStatus((prev) => {
+      const next = { ...prev };
+      delete next[localId];
+      return next;
+    });
+    setPendingKinds((prev) => {
+      const next = { ...prev };
+      delete next[localId];
+      return next;
+    });
+    delete retryFns.current[localId];
+  }
+
+  function retryMessage(id: string) {
+    retryFns.current[id]?.();
+  }
+
+  async function sendText(retryId?: string, retryContent?: string) {
+    const content = retryId ? retryContent! : text.trim();
     if (!content) return;
-    setText("");
+    const localId = retryId ?? `local-${crypto.randomUUID()}`;
+    if (!retryId) {
+      setText("");
+      const draft: MessageRow = {
+        id: localId,
+        sender_name: name,
+        content,
+        photo_id: null,
+        ref_id: null,
+        audio_path: null,
+        saved: false,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, draft]);
+    }
+    setPendingStatus((prev) => ({ ...prev, [localId]: "sending" }));
+    retryFns.current[localId] = () => sendText(localId, content);
     try {
       const { data: row, error } = await supabase
         .from("messages")
         .insert({ sender_name: name, content })
         .select()
         .single();
-      if (error) {
-        alert("Message non envoyé : " + error.message);
-        return;
-      }
-      setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+      if (error || !row) throw error ?? new Error("Message non envoyé");
+      resolveDraft(localId, row);
       notify(content.length > 80 ? content.slice(0, 80) + "…" : content);
-    } catch (e: any) {
-      alert("Message non envoyé : " + (e?.message ?? String(e)));
+    } catch {
+      setPendingStatus((prev) => ({ ...prev, [localId]: "failed" }));
     }
   }
 
-  async function sendPhoto(file: File) {
-    setSending(true);
-    const path = `${crypto.randomUUID()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage
-      .from(PHOTOS_BUCKET)
-      .upload(path, file);
-    if (uploadError) {
-      alert("Photo non envoyée : " + uploadError.message);
-      setSending(false);
-      return;
+  async function sendPhoto(file: File, retryId?: string) {
+    const localId = retryId ?? `local-${crypto.randomUUID()}`;
+    if (!retryId) {
+      const draft: MessageRow = {
+        id: localId,
+        sender_name: name,
+        content: null,
+        photo_id: null,
+        ref_id: null,
+        audio_path: null,
+        saved: false,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, draft]);
+      setPendingKinds((prev) => ({ ...prev, [localId]: "photo" }));
     }
-    const { data: photoRow, error: photoError } = await supabase
-      .from("photos")
-      .insert({ storage_path: path, sender_name: name })
-      .select()
-      .single();
-    if (photoError || !photoRow) {
-      alert("Photo non envoyée : " + (photoError?.message ?? "erreur inconnue"));
-      setSending(false);
-      return;
-    }
-    setPhotos((prev) => ({ ...prev, [photoRow.id]: photoRow }));
-    const { data: row, error: msgError } = await supabase
-      .from("messages")
-      .insert({ sender_name: name, photo_id: photoRow.id })
-      .select()
-      .single();
-    if (msgError) {
-      alert("Message photo non envoyé : " + msgError.message);
-    } else if (row) {
-      setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+    setPendingStatus((prev) => ({ ...prev, [localId]: "sending" }));
+    retryFns.current[localId] = () => sendPhoto(file, localId);
+
+    try {
+      const path = `${crypto.randomUUID()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from(PHOTOS_BUCKET)
+        .upload(path, file);
+      if (uploadError) throw uploadError;
+      const { data: photoRow, error: photoError } = await supabase
+        .from("photos")
+        .insert({ storage_path: path, sender_name: name })
+        .select()
+        .single();
+      if (photoError || !photoRow) throw photoError ?? new Error("Photo non enregistrée");
+      setPhotos((prev) => ({ ...prev, [photoRow.id]: photoRow }));
+      const { data: row, error: msgError } = await supabase
+        .from("messages")
+        .insert({ sender_name: name, photo_id: photoRow.id })
+        .select()
+        .single();
+      if (msgError || !row) throw msgError ?? new Error("Message photo non envoyé");
+      resolveDraft(localId, row);
       notify("📷 a envoyé une photo");
+    } catch {
+      setPendingStatus((prev) => ({ ...prev, [localId]: "failed" }));
     }
-    setSending(false);
   }
 
   async function startRecording() {
@@ -312,47 +355,76 @@ export default function ChatPage() {
     setRecordingSeconds(0);
   }
 
-  async function sendVoice(blob: Blob, mimeType: string) {
-    setSending(true);
-    const ext = mimeType.includes("mp4") ? "m4a" : mimeType.includes("ogg") ? "ogg" : "webm";
-    const path = `${crypto.randomUUID()}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from(VOICES_BUCKET)
-      .upload(path, blob, { contentType: mimeType });
-    if (uploadError) {
-      alert("Message vocal non envoyé : " + uploadError.message);
-      setSending(false);
-      return;
+  async function sendVoice(blob: Blob, mimeType: string, retryId?: string) {
+    const localId = retryId ?? `local-${crypto.randomUUID()}`;
+    if (!retryId) {
+      const draft: MessageRow = {
+        id: localId,
+        sender_name: name,
+        content: null,
+        photo_id: null,
+        ref_id: null,
+        audio_path: null,
+        saved: false,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, draft]);
+      setPendingKinds((prev) => ({ ...prev, [localId]: "voice" }));
     }
-    const { data: row, error } = await supabase
-      .from("messages")
-      .insert({ sender_name: name, audio_path: path })
-      .select()
-      .single();
-    if (error) {
-      alert("Message vocal non envoyé : " + error.message);
-    } else if (row) {
-      setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+    setPendingStatus((prev) => ({ ...prev, [localId]: "sending" }));
+    retryFns.current[localId] = () => sendVoice(blob, mimeType, localId);
+
+    try {
+      const ext = mimeType.includes("mp4") ? "m4a" : mimeType.includes("ogg") ? "ogg" : "webm";
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from(VOICES_BUCKET)
+        .upload(path, blob, { contentType: mimeType });
+      if (uploadError) throw uploadError;
+      const { data: row, error } = await supabase
+        .from("messages")
+        .insert({ sender_name: name, audio_path: path })
+        .select()
+        .single();
+      if (error || !row) throw error ?? new Error("Message vocal non envoyé");
+      resolveDraft(localId, row);
       notify("🎤 a envoyé un message vocal");
+    } catch {
+      setPendingStatus((prev) => ({ ...prev, [localId]: "failed" }));
     }
-    setSending(false);
   }
 
-  async function sendRef(ref: RefRow) {
-    setRefPickerOpen(false);
-    const { data: row, error } = await supabase
-      .from("messages")
-      .insert({ sender_name: name, ref_id: ref.id })
-      .select()
-      .single();
-    if (error) {
-      alert("Ref non envoyée : " + error.message);
-      return;
-    }
+  async function sendRef(ref: RefRow, retryId?: string) {
+    if (!retryId) setRefPickerOpen(false);
+    const localId = retryId ?? `local-${crypto.randomUUID()}`;
     setRefs((prev) => ({ ...prev, [ref.id]: ref }));
-    if (row) {
-      setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+    if (!retryId) {
+      const draft: MessageRow = {
+        id: localId,
+        sender_name: name,
+        content: null,
+        photo_id: null,
+        ref_id: ref.id,
+        audio_path: null,
+        saved: false,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, draft]);
+    }
+    setPendingStatus((prev) => ({ ...prev, [localId]: "sending" }));
+    retryFns.current[localId] = () => sendRef(ref, localId);
+
+    try {
+      const { data: row, error } = await supabase
+        .from("messages")
+        .insert({ sender_name: name, ref_id: ref.id })
+        .select()
+        .single();
+      if (error || !row) throw error ?? new Error("Ref non envoyée");
+      resolveDraft(localId, row);
       notify(`🔖 a partagé une ref : ${ref.title}`);
+    } catch {
+      setPendingStatus((prev) => ({ ...prev, [localId]: "failed" }));
     }
   }
 
@@ -434,8 +506,11 @@ export default function ChatPage() {
             isMine={m.sender_name === name}
             color={color}
             seen={view === "chat" && m.id === lastSeenId}
+            status={pendingStatus[m.id]}
+            pendingKind={pendingKinds[m.id]}
             onOpenActions={() => setActiveMessage(m)}
             onOpenRef={openRef}
+            onRetry={() => retryMessage(m.id)}
           />
         ))}
         <div ref={bottomRef} />
@@ -490,16 +565,14 @@ export default function ChatPage() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={sending}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-100 text-xl transition active:scale-90 disabled:opacity-50 disabled:active:scale-100"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-100 text-xl transition active:scale-90"
               >
                 📷
               </button>
               <button
                 type="button"
                 onClick={() => setRefPickerOpen(true)}
-                disabled={sending}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-100 text-xl transition active:scale-90 disabled:opacity-50 disabled:active:scale-100"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-100 text-xl transition active:scale-90"
               >
                 🔖
               </button>
@@ -520,9 +593,8 @@ export default function ChatPage() {
                 <button
                   type="button"
                   onClick={startRecording}
-                  disabled={sending}
                   aria-label="Enregistrer un message vocal"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-500 text-lg text-white transition active:scale-90 disabled:opacity-50 disabled:active:scale-100"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-500 text-lg text-white transition active:scale-90"
                 >
                   🎤
                 </button>
