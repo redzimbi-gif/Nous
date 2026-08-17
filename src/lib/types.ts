@@ -17,7 +17,7 @@ export type MessageRow = {
   created_at: string;
 };
 
-export type EventCategory = "date" | "anniversaire" | "voyage" | "travail" | "autre";
+export type EventCategory = "date" | "anniversaire" | "voyage" | "travail" | "sport" | "autre";
 
 export type EventRow = {
   id: string;

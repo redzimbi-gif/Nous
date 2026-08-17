@@ -14,6 +14,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
   anniversaire: "🎂",
   voyage: "✈️",
   travail: "💼",
+  sport: "🏀",
   autre: "📌",
 };
 
