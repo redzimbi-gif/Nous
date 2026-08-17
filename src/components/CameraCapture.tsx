@@ -7,6 +7,7 @@ export type CapturedMedia = {
   kind: "image" | "video";
   mimeType: string;
   ephemeral: boolean;
+  mirrored: boolean;
 };
 
 const MAX_VIDEO_SECONDS = 15;
@@ -177,6 +178,7 @@ export default function CameraCapture({
       kind: captured.kind,
       mimeType: captured.mimeType,
       ephemeral: captured.kind === "video" ? true : ephemeral,
+      mirrored: captured.kind === "video" && facingMode === "user",
     });
   }
 
@@ -256,7 +258,9 @@ export default function CameraCapture({
                 loop
                 controls
                 playsInline
-                className="h-full w-full object-contain"
+                className={`h-full w-full object-contain ${
+                  facingMode === "user" ? "-scale-x-100" : ""
+                }`}
               />
             )}
             <button

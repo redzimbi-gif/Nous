@@ -16,6 +16,7 @@ export type MessageRow = {
   ephemeral_path: string | null;
   ephemeral_type: "image" | "video" | null;
   ephemeral_viewed_at: string | null;
+  ephemeral_mirrored: boolean;
   saved: boolean;
   created_at: string;
 };

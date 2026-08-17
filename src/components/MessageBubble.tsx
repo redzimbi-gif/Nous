@@ -36,6 +36,7 @@ export default function MessageBubble({
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [refMediaUrl, setRefMediaUrl] = useState<string | null>(null);
   const classes = COLOR_CLASSES[color] ?? COLOR_CLASSES.blush;
+  const ephemeralSeen = message.ephemeral_type ? !!message.ephemeral_viewed_at : seen;
 
   useEffect(() => {
     if (!photo) return;
@@ -110,6 +111,18 @@ export default function MessageBubble({
                 {message.ephemeral_type === "video" ? "🎥" : "📸"}
               </span>
               {message.ephemeral_type === "video" ? "Vidéo" : "Photo"} éphémère · Vue
+            </div>
+          ) : isMine ? (
+            <div className={`flex items-center gap-2 rounded-2xl p-2 text-sm opacity-70 ${overlayBg}`}>
+              <span className="text-xl">
+                {message.ephemeral_type === "video" ? "🎥" : "🔥"}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-bold">
+                  {message.ephemeral_type === "video" ? "Vidéo éphémère" : "Photo éphémère"}
+                </span>
+                <span className="block text-xs opacity-70">En attente d&apos;ouverture</span>
+              </span>
             </div>
           ) : (
             message.ephemeral_path && (
@@ -201,8 +214,15 @@ export default function MessageBubble({
           <>
             {message.saved && <span className="text-[11px]">🦆</span>}
             <span className="text-[10px] text-blush-300">{time}</span>
-            {isMine && seen && (
-              <span className="text-[10px] font-semibold text-blush-300">Vu</span>
+            {isMine && (
+              <span
+                className={`text-[11px] leading-none ${
+                  ephemeralSeen ? "text-blush-500" : "text-blush-200"
+                }`}
+                aria-label={ephemeralSeen ? "Vu" : "Envoyé"}
+              >
+                {ephemeralSeen ? "✓✓" : "✓"}
+              </span>
             )}
             <button
               onClick={onOpenActions}

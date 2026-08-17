@@ -3,10 +3,12 @@
 export default function EphemeralViewer({
   url,
   kind,
+  mirrored,
   onClose,
 }: {
   url: string | null;
   kind: "image" | "video";
+  mirrored?: boolean;
   onClose: () => void;
 }) {
   return (
@@ -29,7 +31,9 @@ export default function EphemeralViewer({
             loop
             controls
             playsInline
-            className="max-h-full max-w-full object-contain"
+            className={`max-h-full max-w-full object-contain ${
+              mirrored ? "-scale-x-100" : ""
+            }`}
             onClick={(e) => e.stopPropagation()}
           />
         )

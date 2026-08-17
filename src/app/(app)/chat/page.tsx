@@ -40,6 +40,7 @@ export default function ChatPage() {
     message: MessageRow;
     url: string | null;
     kind: "image" | "video";
+    mirrored: boolean;
   } | null>(null);
   const [recording, setRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -169,20 +170,12 @@ export default function ChatPage() {
     return () => document.removeEventListener("visibilitychange", markRead);
   }, [messages, view, name]);
 
-  const lastSeenId = useMemo(() => {
+  const otherReadAt = useMemo(() => {
     const otherTimes = Object.entries(reads)
       .filter(([n]) => n !== name)
       .map(([, t]) => new Date(t).getTime());
-    if (!otherTimes.length) return null;
-    const otherReadAt = Math.max(...otherTimes);
-    let result: string | null = null;
-    for (const m of messages) {
-      if (m.sender_name === name && new Date(m.created_at).getTime() <= otherReadAt) {
-        result = m.id;
-      }
-    }
-    return result;
-  }, [messages, reads, name]);
+    return otherTimes.length ? Math.max(...otherTimes) : null;
+  }, [reads, name]);
 
   useEffect(() => {
     if (view === "chat") bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -212,7 +205,12 @@ export default function ChatPage() {
 
   async function openEphemeral(message: MessageRow) {
     if (!message.ephemeral_path || !message.ephemeral_type) return;
-    setViewingEphemeral({ message, url: null, kind: message.ephemeral_type });
+    setViewingEphemeral({
+      message,
+      url: null,
+      kind: message.ephemeral_type,
+      mirrored: message.ephemeral_mirrored,
+    });
     const { data } = await supabase.storage
       .from(EPHEMERAL_BUCKET)
       .createSignedUrl(message.ephemeral_path, 120);
@@ -269,6 +267,7 @@ export default function ChatPage() {
         ephemeral_path: null,
         ephemeral_type: null,
         ephemeral_viewed_at: null,
+        ephemeral_mirrored: false,
         saved: false,
         created_at: new Date().toISOString(),
       };
@@ -303,6 +302,7 @@ export default function ChatPage() {
         ephemeral_path: null,
         ephemeral_type: media.ephemeral ? media.kind : null,
         ephemeral_viewed_at: null,
+        ephemeral_mirrored: media.mirrored,
         saved: false,
         created_at: new Date().toISOString(),
       };
@@ -325,7 +325,12 @@ export default function ChatPage() {
         if (uploadError) throw uploadError;
         const { data: row, error } = await supabase
           .from("messages")
-          .insert({ sender_name: name, ephemeral_path: path, ephemeral_type: media.kind })
+          .insert({
+            sender_name: name,
+            ephemeral_path: path,
+            ephemeral_type: media.kind,
+            ephemeral_mirrored: media.mirrored,
+          })
           .select()
           .single();
         if (error || !row) throw error ?? new Error("Message non envoyé");
@@ -433,6 +438,7 @@ export default function ChatPage() {
         ephemeral_path: null,
         ephemeral_type: null,
         ephemeral_viewed_at: null,
+        ephemeral_mirrored: false,
         saved: false,
         created_at: new Date().toISOString(),
       };
@@ -477,6 +483,7 @@ export default function ChatPage() {
         ephemeral_path: null,
         ephemeral_type: null,
         ephemeral_viewed_at: null,
+        ephemeral_mirrored: false,
         saved: false,
         created_at: new Date().toISOString(),
       };
@@ -576,7 +583,11 @@ export default function ChatPage() {
             refItem={m.ref_id ? refs[m.ref_id] : undefined}
             isMine={m.sender_name === name}
             color={color}
-            seen={view === "chat" && m.id === lastSeenId}
+            seen={
+              view === "chat" &&
+              otherReadAt !== null &&
+              new Date(m.created_at).getTime() <= otherReadAt
+            }
             status={pendingStatus[m.id]}
             pendingKind={pendingKinds[m.id]}
             onOpenActions={() => setActiveMessage(m)}
@@ -703,6 +714,7 @@ export default function ChatPage() {
         <EphemeralViewer
           url={viewingEphemeral.url}
           kind={viewingEphemeral.kind}
+          mirrored={viewingEphemeral.mirrored}
           onClose={closeEphemeral}
         />
       )}
