@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { supabase, PHOTOS_BUCKET, REFS_BUCKET, VOICES_BUCKET } from "@/lib/supabase";
+import {
+  supabase,
+  EPHEMERAL_BUCKET,
+  PHOTOS_BUCKET,
+  REFS_BUCKET,
+  VOICES_BUCKET,
+} from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import type { ChatReadRow, MessageRow, PhotoRow, RefRow } from "@/lib/types";
 import MessageBubble from "@/components/MessageBubble";
 import MessageActions from "@/components/MessageActions";
 import RefPicker from "@/components/RefPicker";
 import RefDetail from "@/components/RefDetail";
+import CameraCapture, { type CapturedMedia } from "@/components/CameraCapture";
+import EphemeralViewer from "@/components/EphemeralViewer";
 import { sendNotification } from "@/lib/notify";
 
 export default function ChatPage() {
@@ -18,17 +26,24 @@ export default function ChatPage() {
   const [reads, setReads] = useState<Record<string, string>>({});
   const [text, setText] = useState("");
   const [pendingStatus, setPendingStatus] = useState<Record<string, "sending" | "failed">>({});
-  const [pendingKinds, setPendingKinds] = useState<Record<string, "photo" | "voice">>({});
+  const [pendingKinds, setPendingKinds] = useState<Record<string, "photo" | "voice" | "video">>(
+    {}
+  );
   const retryFns = useRef<Record<string, () => void>>({});
   const [view, setView] = useState<"chat" | "canards">("chat");
   const [activeMessage, setActiveMessage] = useState<MessageRow | null>(null);
   const [refPickerOpen, setRefPickerOpen] = useState(false);
   const [viewingRef, setViewingRef] = useState<RefRow | null>(null);
   const [viewingRefUrl, setViewingRefUrl] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [viewingEphemeral, setViewingEphemeral] = useState<{
+    message: MessageRow;
+    url: string | null;
+    kind: "image" | "video";
+  } | null>(null);
   const [recording, setRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
@@ -195,6 +210,30 @@ export default function ChatPage() {
     }
   }
 
+  async function openEphemeral(message: MessageRow) {
+    if (!message.ephemeral_path || !message.ephemeral_type) return;
+    setViewingEphemeral({ message, url: null, kind: message.ephemeral_type });
+    const { data } = await supabase.storage
+      .from(EPHEMERAL_BUCKET)
+      .createSignedUrl(message.ephemeral_path, 120);
+    setViewingEphemeral((v) => (v ? { ...v, url: data?.signedUrl ?? null } : v));
+  }
+
+  async function closeEphemeral() {
+    const current = viewingEphemeral;
+    setViewingEphemeral(null);
+    const path = current?.message.ephemeral_path;
+    if (!current || !path) return;
+    await supabase.storage.from(EPHEMERAL_BUCKET).remove([path]);
+    const { data } = await supabase
+      .from("messages")
+      .update({ ephemeral_path: null, ephemeral_viewed_at: new Date().toISOString() })
+      .eq("id", current.message.id)
+      .select()
+      .single();
+    if (data) setMessages((prev) => prev.map((m) => (m.id === data.id ? data : m)));
+  }
+
   function resolveDraft(localId: string, row: MessageRow) {
     setMessages((prev) => prev.map((m) => (m.id === localId ? row : m)));
     setPendingStatus((prev) => {
@@ -227,6 +266,9 @@ export default function ChatPage() {
         photo_id: null,
         ref_id: null,
         audio_path: null,
+        ephemeral_path: null,
+        ephemeral_type: null,
+        ephemeral_viewed_at: null,
         saved: false,
         created_at: new Date().toISOString(),
       };
@@ -248,7 +290,7 @@ export default function ChatPage() {
     }
   }
 
-  async function sendPhoto(file: File, retryId?: string) {
+  async function sendCapturedMedia(media: CapturedMedia, retryId?: string) {
     const localId = retryId ?? `local-${crypto.randomUUID()}`;
     if (!retryId) {
       const draft: MessageRow = {
@@ -258,36 +300,59 @@ export default function ChatPage() {
         photo_id: null,
         ref_id: null,
         audio_path: null,
+        ephemeral_path: null,
+        ephemeral_type: media.ephemeral ? media.kind : null,
+        ephemeral_viewed_at: null,
         saved: false,
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, draft]);
-      setPendingKinds((prev) => ({ ...prev, [localId]: "photo" }));
+      setPendingKinds((prev) => ({
+        ...prev,
+        [localId]: media.kind === "video" ? "video" : "photo",
+      }));
     }
     setPendingStatus((prev) => ({ ...prev, [localId]: "sending" }));
-    retryFns.current[localId] = () => sendPhoto(file, localId);
+    retryFns.current[localId] = () => sendCapturedMedia(media, localId);
 
     try {
-      const path = `${crypto.randomUUID()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from(PHOTOS_BUCKET)
-        .upload(path, file);
-      if (uploadError) throw uploadError;
-      const { data: photoRow, error: photoError } = await supabase
-        .from("photos")
-        .insert({ storage_path: path, sender_name: name })
-        .select()
-        .single();
-      if (photoError || !photoRow) throw photoError ?? new Error("Photo non enregistrée");
-      setPhotos((prev) => ({ ...prev, [photoRow.id]: photoRow }));
-      const { data: row, error: msgError } = await supabase
-        .from("messages")
-        .insert({ sender_name: name, photo_id: photoRow.id })
-        .select()
-        .single();
-      if (msgError || !row) throw msgError ?? new Error("Message photo non envoyé");
-      resolveDraft(localId, row);
-      notify("📷 a envoyé une photo");
+      if (media.ephemeral) {
+        const ext = media.kind === "video" ? (media.mimeType.includes("mp4") ? "mp4" : "webm") : "jpg";
+        const path = `${crypto.randomUUID()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from(EPHEMERAL_BUCKET)
+          .upload(path, media.blob, { contentType: media.mimeType });
+        if (uploadError) throw uploadError;
+        const { data: row, error } = await supabase
+          .from("messages")
+          .insert({ sender_name: name, ephemeral_path: path, ephemeral_type: media.kind })
+          .select()
+          .single();
+        if (error || !row) throw error ?? new Error("Message non envoyé");
+        resolveDraft(localId, row);
+        notify(media.kind === "video" ? "🎥 a envoyé une vidéo éphémère" : "🔥 a envoyé une photo éphémère");
+      } else {
+        const path = `${crypto.randomUUID()}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from(PHOTOS_BUCKET)
+          .upload(path, media.blob, { contentType: media.mimeType });
+        if (uploadError) throw uploadError;
+        const { data: photoRow, error: photoError } = await supabase
+          .from("photos")
+          .insert({ storage_path: path, sender_name: name })
+          .select()
+          .single();
+        if (photoError || !photoRow) throw photoError ?? new Error("Photo non enregistrée");
+        setPhotos((prev) => ({ ...prev, [photoRow.id]: photoRow }));
+        const { data: row, error: msgError } = await supabase
+          .from("messages")
+          .insert({ sender_name: name, photo_id: photoRow.id })
+          .select()
+          .single();
+        if (msgError || !row) throw msgError ?? new Error("Message photo non envoyé");
+        resolveDraft(localId, row);
+        notify("📷 a envoyé une photo");
+      }
     } catch {
       setPendingStatus((prev) => ({ ...prev, [localId]: "failed" }));
     }
@@ -365,6 +430,9 @@ export default function ChatPage() {
         photo_id: null,
         ref_id: null,
         audio_path: null,
+        ephemeral_path: null,
+        ephemeral_type: null,
+        ephemeral_viewed_at: null,
         saved: false,
         created_at: new Date().toISOString(),
       };
@@ -406,6 +474,9 @@ export default function ChatPage() {
         photo_id: null,
         ref_id: ref.id,
         audio_path: null,
+        ephemeral_path: null,
+        ephemeral_type: null,
+        ephemeral_viewed_at: null,
         saved: false,
         created_at: new Date().toISOString(),
       };
@@ -510,6 +581,7 @@ export default function ChatPage() {
             pendingKind={pendingKinds[m.id]}
             onOpenActions={() => setActiveMessage(m)}
             onOpenRef={openRef}
+            onOpenEphemeral={openEphemeral}
             onRetry={() => retryMessage(m.id)}
           />
         ))}
@@ -524,17 +596,6 @@ export default function ChatPage() {
           }}
           className="flex items-center gap-2 border-t border-blush-100 bg-white px-3 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) sendPhoto(file);
-              e.target.value = "";
-            }}
-          />
           {recording ? (
             <>
               <button
@@ -564,7 +625,7 @@ export default function ChatPage() {
             <>
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setCameraOpen(true)}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush-100 text-xl transition active:scale-90"
               >
                 📷
@@ -625,6 +686,24 @@ export default function ChatPage() {
             setViewingRef(null);
             setViewingRefUrl(null);
           }}
+        />
+      )}
+
+      {cameraOpen && (
+        <CameraCapture
+          onClose={() => setCameraOpen(false)}
+          onSend={(media) => {
+            setCameraOpen(false);
+            sendCapturedMedia(media);
+          }}
+        />
+      )}
+
+      {viewingEphemeral && (
+        <EphemeralViewer
+          url={viewingEphemeral.url}
+          kind={viewingEphemeral.kind}
+          onClose={closeEphemeral}
         />
       )}
     </div>

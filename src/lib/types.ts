@@ -13,6 +13,9 @@ export type MessageRow = {
   photo_id: string | null;
   ref_id: string | null;
   audio_path: string | null;
+  ephemeral_path: string | null;
+  ephemeral_type: "image" | "video" | null;
+  ephemeral_viewed_at: string | null;
   saved: boolean;
   created_at: string;
 };

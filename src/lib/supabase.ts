@@ -27,3 +27,4 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 export const PHOTOS_BUCKET = "nous-photos";
 export const REFS_BUCKET = "nous-refs";
 export const VOICES_BUCKET = "nous-voices";
+export const EPHEMERAL_BUCKET = "nous-ephemeral";
