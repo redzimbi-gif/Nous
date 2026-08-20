@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase, VOICES_BUCKET } from "@/lib/supabase";
 
+let activeAudio: HTMLAudioElement | null = null;
+
 export default function VoiceMessage({
   path,
   tone,
@@ -29,11 +31,30 @@ export default function VoiceMessage({
     };
   }, [path]);
 
+  useEffect(() => {
+    return () => {
+      if (activeAudio === audioRef.current) activeAudio = null;
+    };
+  }, []);
+
   function toggle() {
     const audio = audioRef.current;
     if (!audio) return;
-    if (playing) audio.pause();
-    else audio.play();
+    if (playing) {
+      audio.pause();
+    } else {
+      if (activeAudio && activeAudio !== audio) activeAudio.pause();
+      activeAudio = audio;
+      audio.play();
+    }
+  }
+
+  function seek(e: React.ChangeEvent<HTMLInputElement>) {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const t = Number(e.target.value);
+    audio.currentTime = t;
+    setCurrentTime(t);
   }
 
   function formatTime(seconds: number) {
@@ -71,10 +92,25 @@ export default function VoiceMessage({
       >
         {playing ? "⏸" : "▶️"}
       </button>
-      <div className={`h-1.5 flex-1 overflow-hidden rounded-full ${isMine ? "bg-white/30" : "bg-blush-100"}`}>
+      <div
+        className={`relative h-1.5 flex-1 overflow-hidden rounded-full ${
+          isMine ? "bg-white/30" : "bg-blush-100"
+        }`}
+      >
         <div
           className={`h-full rounded-full ${isMine ? "bg-white" : "bg-blush-500"}`}
           style={{ width: `${progress}%` }}
+        />
+        <input
+          type="range"
+          min={0}
+          max={duration || 0}
+          step={0.1}
+          value={currentTime}
+          onChange={seek}
+          disabled={!url || !duration}
+          aria-label="Position de lecture"
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
         />
       </div>
       <span className="shrink-0 text-[11px] tabular-nums opacity-80">

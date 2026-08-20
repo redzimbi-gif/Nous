@@ -159,7 +159,7 @@ export default function StatusBar() {
             className="fixed inset-0 z-40"
             onClick={() => setPickerOpen(false)}
           />
-          <div className="absolute left-4 top-full z-50 mt-1 grid w-72 origin-top-left grid-cols-4 gap-1 rounded-2xl bg-white p-2 shadow-lg animate-pop-in">
+          <div className="absolute left-4 top-full z-50 mt-1 grid max-h-[70vh] w-72 origin-top-left grid-cols-4 gap-1 overflow-y-auto rounded-2xl bg-white p-2 shadow-lg animate-pop-in">
             {MOODS.map((m) => (
               <button
                 key={m.value}

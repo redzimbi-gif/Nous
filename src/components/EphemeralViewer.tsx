@@ -31,6 +31,7 @@ export default function EphemeralViewer({
             loop
             controls
             playsInline
+            preload="auto"
             className={`max-h-full max-w-full object-contain ${
               mirrored ? "-scale-x-100" : ""
             }`}

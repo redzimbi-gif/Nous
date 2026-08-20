@@ -29,6 +29,7 @@ export type EventRow = {
   description: string | null;
   event_date: string;
   event_time: string | null;
+  event_end_time: string | null;
   all_day: boolean;
   category: EventCategory;
   created_by: string;
@@ -80,7 +81,14 @@ export type Mood =
   | "anxieux"
   | "triste"
   | "en_colere"
-  | "malade";
+  | "malade"
+  | "emu"
+  | "clownesque"
+  | "seducteur"
+  | "epuise"
+  | "agace"
+  | "amuse"
+  | "alcoolise";
 
 export type StatusRow = {
   name: string;

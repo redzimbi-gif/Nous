@@ -21,6 +21,7 @@ import { sendNotification } from "@/lib/notify";
 export default function ChatPage() {
   const { name, color } = useIdentity();
   const [messages, setMessages] = useState<MessageRow[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const [photos, setPhotos] = useState<Record<string, PhotoRow>>({});
   const [refs, setRefs] = useState<Record<string, RefRow>>({});
   const [reads, setReads] = useState<Record<string, string>>({});
@@ -50,44 +51,48 @@ export default function ChatPage() {
   const streamRef = useRef<MediaStream | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    let active = true;
+  async function loadMessages() {
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (!data) return;
+    const ordered = [...data].reverse();
+    setMessages(ordered);
 
-    async function load() {
-      const { data } = await supabase
-        .from("messages")
+    const photoIds = ordered.map((m) => m.photo_id).filter(Boolean) as string[];
+    if (photoIds.length) {
+      const { data: photoRows } = await supabase
+        .from("photos")
         .select("*")
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (!active || !data) return;
-      const ordered = [...data].reverse();
-      setMessages(ordered);
-
-      const photoIds = ordered.map((m) => m.photo_id).filter(Boolean) as string[];
-      if (photoIds.length) {
-        const { data: photoRows } = await supabase
-          .from("photos")
-          .select("*")
-          .in("id", photoIds);
-        if (photoRows && active) {
-          const map: Record<string, PhotoRow> = {};
-          photoRows.forEach((p) => (map[p.id] = p));
-          setPhotos(map);
-        }
-      }
-
-      const refIds = ordered.map((m) => m.ref_id).filter(Boolean) as string[];
-      if (refIds.length) {
-        const { data: refRows } = await supabase.from("refs").select("*").in("id", refIds);
-        if (refRows && active) {
-          const map: Record<string, RefRow> = {};
-          refRows.forEach((r) => (map[r.id] = r));
-          setRefs(map);
-        }
+        .in("id", photoIds);
+      if (photoRows) {
+        const map: Record<string, PhotoRow> = {};
+        photoRows.forEach((p) => (map[p.id] = p));
+        setPhotos(map);
       }
     }
 
-    load();
+    const refIds = ordered.map((m) => m.ref_id).filter(Boolean) as string[];
+    if (refIds.length) {
+      const { data: refRows } = await supabase.from("refs").select("*").in("id", refIds);
+      if (refRows) {
+        const map: Record<string, RefRow> = {};
+        refRows.forEach((r) => (map[r.id] = r));
+        setRefs(map);
+      }
+    }
+  }
+
+  async function refreshMessages() {
+    setRefreshing(true);
+    await loadMessages();
+    setRefreshing(false);
+  }
+
+  useEffect(() => {
+    loadMessages();
 
     const channel = supabase
       .channel("messages-realtime")
@@ -126,7 +131,6 @@ export default function ChatPage() {
       .subscribe();
 
     return () => {
-      active = false;
       supabase.removeChannel(channel);
     };
   }, []);
@@ -545,6 +549,14 @@ export default function ChatPage() {
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
         <h1 className="text-lg font-extrabold text-blush-700">💬 Chat</h1>
+        <button
+          onClick={refreshMessages}
+          disabled={refreshing}
+          aria-label="Rafraîchir les messages"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-blush-50 text-lg text-blush-500 transition active:scale-90 disabled:opacity-50"
+        >
+          <span className={refreshing ? "animate-spin" : ""}>🔄</span>
+        </button>
       </header>
 
       <div className="flex border-b border-blush-100 bg-white px-4">

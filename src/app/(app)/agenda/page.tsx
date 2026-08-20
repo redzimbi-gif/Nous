@@ -139,6 +139,7 @@ export default function AgendaPage() {
                 {!ev.all_day && ev.event_time && (
                   <span className="text-xs text-blush-400">
                     {ev.event_time.slice(0, 5)}
+                    {ev.event_end_time && ` – ${ev.event_end_time.slice(0, 5)}`}
                   </span>
                 )}
                 {ev.description && (
@@ -146,6 +147,9 @@ export default function AgendaPage() {
                     {ev.description}
                   </span>
                 )}
+                <span className="block text-[11px] text-blush-300">
+                  Ajouté par {ev.created_by}
+                </span>
               </span>
             </button>
           ))}

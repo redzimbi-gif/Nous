@@ -29,6 +29,7 @@ export default function EventModal({
   const [date, setDate] = useState(initial.event_date ?? "");
   const [allDay, setAllDay] = useState(initial.all_day ?? true);
   const [time, setTime] = useState(initial.event_time?.slice(0, 5) ?? "");
+  const [endTime, setEndTime] = useState(initial.event_end_time?.slice(0, 5) ?? "");
   const [description, setDescription] = useState(initial.description ?? "");
   const [category, setCategory] = useState<EventCategory>(
     initial.category ?? "autre"
@@ -42,6 +43,7 @@ export default function EventModal({
       event_date: date,
       all_day: allDay,
       event_time: allDay ? null : time || null,
+      event_end_time: allDay ? null : endTime || null,
       description: description.trim() || null,
       category,
     });
@@ -98,15 +100,26 @@ export default function EventModal({
         </div>
 
         {!allDay && (
-          <label className="mb-3 block text-sm font-semibold text-blush-500">
-            Heure
-            <input
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              className="mt-1 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none transition focus:border-blush-300 focus-visible:ring-2 focus-visible:ring-blush-200"
-            />
-          </label>
+          <div className="mb-3 flex gap-2">
+            <label className="block flex-1 text-sm font-semibold text-blush-500">
+              Heure
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="mt-1 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none transition focus:border-blush-300 focus-visible:ring-2 focus-visible:ring-blush-200"
+              />
+            </label>
+            <label className="block flex-1 text-sm font-semibold text-blush-500">
+              Heure de fin
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="mt-1 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none transition focus:border-blush-300 focus-visible:ring-2 focus-visible:ring-blush-200"
+              />
+            </label>
+          </div>
         )}
 
         <label className="mb-3 block text-sm font-semibold text-blush-500">

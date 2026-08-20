@@ -102,28 +102,52 @@ export default function CameraCapture({
     );
   }
 
+  function pickVideoMimeType() {
+    if (typeof MediaRecorder === "undefined") return "";
+    const candidates = [
+      "video/mp4",
+      "video/webm;codecs=vp9,opus",
+      "video/webm;codecs=vp8,opus",
+      "video/webm",
+    ];
+    for (const type of candidates) {
+      if (MediaRecorder.isTypeSupported(type)) return type;
+    }
+    return "";
+  }
+
   function startRecording() {
     const stream = streamRef.current;
-    if (!stream || typeof MediaRecorder === "undefined") return;
-    const recorder = new MediaRecorder(stream);
-    chunksRef.current = [];
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
-    };
-    recorder.onstop = () => {
-      const mimeType = recorder.mimeType || "video/webm";
-      const blob = new Blob(chunksRef.current, { type: mimeType });
+    if (!stream || typeof MediaRecorder === "undefined") {
+      setError("L'enregistrement vidéo n'est pas pris en charge par ce navigateur.");
+      return;
+    }
+    const preferredType = pickVideoMimeType();
+    try {
+      const recorder = preferredType
+        ? new MediaRecorder(stream, { mimeType: preferredType })
+        : new MediaRecorder(stream);
       chunksRef.current = [];
-      setCaptured({ url: URL.createObjectURL(blob), blob, kind: "video", mimeType });
-      setEphemeral(true);
-    };
-    recorderRef.current = recorder;
-    recorder.start();
-    isRecordingRef.current = true;
-    setRecording(true);
-    setRecordSeconds(0);
-    recordTimerRef.current = setInterval(() => setRecordSeconds((s) => s + 1), 1000);
-    autoStopRef.current = setTimeout(() => stopRecording(), MAX_VIDEO_SECONDS * 1000);
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const mimeType = (recorder.mimeType || preferredType || "video/webm").split(";")[0];
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        chunksRef.current = [];
+        setCaptured({ url: URL.createObjectURL(blob), blob, kind: "video", mimeType });
+        setEphemeral(true);
+      };
+      recorderRef.current = recorder;
+      recorder.start(1000);
+      isRecordingRef.current = true;
+      setRecording(true);
+      setRecordSeconds(0);
+      recordTimerRef.current = setInterval(() => setRecordSeconds((s) => s + 1), 1000);
+      autoStopRef.current = setTimeout(() => stopRecording(), MAX_VIDEO_SECONDS * 1000);
+    } catch {
+      setError("Impossible de démarrer l'enregistrement vidéo sur cet appareil.");
+    }
   }
 
   function stopRecording() {
@@ -258,6 +282,7 @@ export default function CameraCapture({
                 loop
                 controls
                 playsInline
+                preload="auto"
                 className={`h-full w-full object-contain ${
                   facingMode === "user" ? "-scale-x-100" : ""
                 }`}
