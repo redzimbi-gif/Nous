@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase, PHOTOS_BUCKET } from "@/lib/supabase";
+import { getCachedSignedUrls } from "@/lib/signedUrlCache";
 import { useIdentity } from "@/lib/identity";
 import type { PhotoRow } from "@/lib/types";
 import Lightbox from "@/components/Lightbox";
@@ -50,16 +51,8 @@ export default function PhotosPage() {
     setPhotos(data);
     const paths = data.map((p) => p.storage_path);
     if (paths.length) {
-      const { data: signed } = await supabase.storage
-        .from(PHOTOS_BUCKET)
-        .createSignedUrls(paths, 3600);
-      if (signed) {
-        const map: Record<string, string> = {};
-        signed.forEach((s, i) => {
-          if (s.signedUrl) map[paths[i]] = s.signedUrl;
-        });
-        setUrls(map);
-      }
+      const map = await getCachedSignedUrls(PHOTOS_BUCKET, paths, 3600);
+      setUrls((prev) => ({ ...prev, ...map }));
     }
   }
 
@@ -88,7 +81,7 @@ export default function PhotosPage() {
       const path = `${crypto.randomUUID()}-${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from(PHOTOS_BUCKET)
-        .upload(path, file);
+        .upload(path, file, { cacheControl: "604800" });
       if (uploadError) {
         alert("Photo non envoyée : " + uploadError.message);
         continue;

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase, REFS_BUCKET } from "@/lib/supabase";
+import { getCachedSignedUrls } from "@/lib/signedUrlCache";
 import { useIdentity } from "@/lib/identity";
 import type { RefRow } from "@/lib/types";
 import RefModal, { type RefFormValues } from "@/components/RefModal";
@@ -25,16 +26,8 @@ export default function RefPage() {
     setItems(data);
     const paths = data.map((r) => r.media_path).filter(Boolean) as string[];
     if (paths.length) {
-      const { data: signed } = await supabase.storage
-        .from(REFS_BUCKET)
-        .createSignedUrls(paths, 3600);
-      if (signed) {
-        const map: Record<string, string> = {};
-        signed.forEach((s, i) => {
-          if (s.signedUrl) map[paths[i]] = s.signedUrl;
-        });
-        setUrls(map);
-      }
+      const map = await getCachedSignedUrls(REFS_BUCKET, paths, 3600);
+      setUrls((prev) => ({ ...prev, ...map }));
     }
   }
 
@@ -58,7 +51,7 @@ export default function RefPage() {
       const path = `${crypto.randomUUID()}-${values.file.name}`;
       const { error: uploadError } = await supabase.storage
         .from(REFS_BUCKET)
-        .upload(path, values.file);
+        .upload(path, values.file, { cacheControl: "604800" });
       if (uploadError) {
         alert("Fichier non envoyé : " + uploadError.message);
         setSaving(false);

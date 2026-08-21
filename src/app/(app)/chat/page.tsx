@@ -8,6 +8,7 @@ import {
   REFS_BUCKET,
   VOICES_BUCKET,
 } from "@/lib/supabase";
+import { getCachedSignedUrl } from "@/lib/signedUrlCache";
 import { useIdentity } from "@/lib/identity";
 import type { ChatReadRow, MessageRow, PhotoRow, RefRow } from "@/lib/types";
 import MessageBubble from "@/components/MessageBubble";
@@ -200,10 +201,8 @@ export default function ChatPage() {
     setViewingRef(ref);
     setViewingRefUrl(null);
     if (ref.media_path) {
-      const { data } = await supabase.storage
-        .from(REFS_BUCKET)
-        .createSignedUrl(ref.media_path, 3600);
-      setViewingRefUrl(data?.signedUrl ?? null);
+      const url = await getCachedSignedUrl(REFS_BUCKET, ref.media_path, 3600);
+      setViewingRefUrl(url);
     }
   }
 
@@ -344,7 +343,7 @@ export default function ChatPage() {
         const path = `${crypto.randomUUID()}.jpg`;
         const { error: uploadError } = await supabase.storage
           .from(PHOTOS_BUCKET)
-          .upload(path, media.blob, { contentType: media.mimeType });
+          .upload(path, media.blob, { contentType: media.mimeType, cacheControl: "604800" });
         if (uploadError) throw uploadError;
         const { data: photoRow, error: photoError } = await supabase
           .from("photos")
@@ -457,7 +456,7 @@ export default function ChatPage() {
       const path = `${crypto.randomUUID()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from(VOICES_BUCKET)
-        .upload(path, blob, { contentType: mimeType });
+        .upload(path, blob, { contentType: mimeType, cacheControl: "604800" });
       if (uploadError) throw uploadError;
       const { data: row, error } = await supabase
         .from("messages")

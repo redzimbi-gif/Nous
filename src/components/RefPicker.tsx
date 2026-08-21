@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase, REFS_BUCKET } from "@/lib/supabase";
+import { getCachedSignedUrls } from "@/lib/signedUrlCache";
 import type { RefRow } from "@/lib/types";
 
 export default function RefPicker({
@@ -28,16 +29,8 @@ export default function RefPicker({
         setItems(data);
         const paths = data.map((r) => r.media_path).filter(Boolean) as string[];
         if (paths.length) {
-          const { data: signed } = await supabase.storage
-            .from(REFS_BUCKET)
-            .createSignedUrls(paths, 3600);
-          if (signed) {
-            const map: Record<string, string> = {};
-            signed.forEach((s, i) => {
-              if (s.signedUrl) map[paths[i]] = s.signedUrl;
-            });
-            setUrls(map);
-          }
+          const map = await getCachedSignedUrls(REFS_BUCKET, paths, 3600);
+          setUrls(map);
         }
         setLoading(false);
       });

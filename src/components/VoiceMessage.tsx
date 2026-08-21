@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { supabase, VOICES_BUCKET } from "@/lib/supabase";
+import { VOICES_BUCKET } from "@/lib/supabase";
+import { getCachedSignedUrl } from "@/lib/signedUrlCache";
 
 let activeAudio: HTMLAudioElement | null = null;
 
@@ -20,12 +21,9 @@ export default function VoiceMessage({
 
   useEffect(() => {
     let active = true;
-    supabase.storage
-      .from(VOICES_BUCKET)
-      .createSignedUrl(path, 3600)
-      .then(({ data }) => {
-        if (active) setUrl(data?.signedUrl ?? null);
-      });
+    getCachedSignedUrl(VOICES_BUCKET, path, 3600).then((signedUrl) => {
+      if (active) setUrl(signedUrl);
+    });
     return () => {
       active = false;
     };
