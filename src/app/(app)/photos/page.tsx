@@ -6,6 +6,7 @@ import { getCachedSignedUrls } from "@/lib/signedUrlCache";
 import { useIdentity } from "@/lib/identity";
 import type { PhotoRow } from "@/lib/types";
 import Lightbox from "@/components/Lightbox";
+import PillButton from "@/components/PillButton";
 
 function isSameDay(a: Date, b: Date): boolean {
   return (
@@ -113,13 +114,9 @@ export default function PhotosPage() {
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
         <h1 className="text-lg font-extrabold text-blush-700">📷 Photos</h1>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white transition active:scale-95 disabled:opacity-50"
-        >
+        <PillButton onClick={() => fileInputRef.current?.click()} disabled={uploading}>
           {uploading ? "Envoi…" : "+ Ajouter"}
-        </button>
+        </PillButton>
         <input
           ref={fileInputRef}
           type="file"

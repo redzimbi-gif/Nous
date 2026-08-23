@@ -7,6 +7,7 @@ import { useIdentity } from "@/lib/identity";
 import type { RefRow } from "@/lib/types";
 import RefModal, { type RefFormValues } from "@/components/RefModal";
 import RefDetail from "@/components/RefDetail";
+import PillButton from "@/components/PillButton";
 
 export default function RefPage() {
   const { name } = useIdentity();
@@ -110,15 +111,14 @@ export default function RefPage() {
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
         <h1 className="text-lg font-extrabold text-blush-700">🖼️ Armoire à ref</h1>
-        <button
+        <PillButton
           onClick={() => {
             setEditing(null);
             setModalOpen(true);
           }}
-          className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white transition active:scale-95"
         >
           + Ajouter
-        </button>
+        </PillButton>
       </header>
 
       <div className="flex-1 overflow-y-auto p-3">

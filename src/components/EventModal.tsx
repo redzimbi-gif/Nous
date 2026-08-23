@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { EventCategory, EventRow } from "@/lib/types";
+import PillButton from "@/components/PillButton";
 
 type FormValues = Partial<EventRow>;
 
@@ -163,19 +164,12 @@ export default function EventModal({
               Supprimer
             </button>
           )}
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 rounded-xl bg-blush-50 py-3 font-bold text-blush-500 transition active:scale-[0.98]"
-          >
+          <PillButton type="button" variant="soft" onClick={onClose} className="flex-1">
             Annuler
-          </button>
-          <button
-            type="submit"
-            className="flex-1 rounded-xl bg-blush-500 py-3 font-bold text-white transition active:scale-[0.98]"
-          >
+          </PillButton>
+          <PillButton type="submit" className="flex-1">
             OK
-          </button>
+          </PillButton>
         </div>
       </form>
     </div>

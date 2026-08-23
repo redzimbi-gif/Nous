@@ -6,6 +6,7 @@ import { useIdentity } from "@/lib/identity";
 import type { EventRow } from "@/lib/types";
 import AgendaCalendar from "@/components/AgendaCalendar";
 import EventModal from "@/components/EventModal";
+import PillButton from "@/components/PillButton";
 import { toISODate } from "@/lib/date";
 import { sendNotification } from "@/lib/notify";
 
@@ -89,15 +90,14 @@ export default function AgendaPage() {
     <div className="flex h-full flex-col overflow-y-auto">
       <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
         <h1 className="text-lg font-extrabold text-blush-700">📅 Agenda</h1>
-        <button
+        <PillButton
           onClick={() => {
             setEditing(null);
             setModalOpen(true);
           }}
-          className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white transition active:scale-95"
         >
           + Ajouter
-        </button>
+        </PillButton>
       </header>
 
       <AgendaCalendar
