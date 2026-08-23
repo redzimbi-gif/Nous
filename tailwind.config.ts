@@ -18,9 +18,22 @@ const config: Config = {
           900: "#7c2436",
         },
         cream: "#fffaf3",
+        grape: {
+          50: "#f7f1fb",
+          100: "#ecdcf7",
+          200: "#dcbdef",
+          300: "#c896e3",
+          400: "#af6dd2",
+          500: "#8f52ba",
+          600: "#763f9c",
+          700: "#602f81",
+          800: "#4d2568",
+          900: "#3f1f54",
+        },
       },
       fontFamily: {
         sans: ["Nunito", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Fredoka", "ui-rounded", "system-ui", "sans-serif"],
       },
       keyframes: {
         shake: {

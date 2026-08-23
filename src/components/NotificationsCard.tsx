@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
+import PillButton from "@/components/PillButton";
+import Toggle from "@/components/Toggle";
 
 type Status =
   | "checking"
@@ -142,25 +144,15 @@ export default function NotificationsCard() {
         )}
 
         {status === "default" && (
-          <button
-            onClick={enable}
-            disabled={busy}
-            className="w-full rounded-xl bg-blush-500 py-2.5 font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
-          >
+          <PillButton onClick={enable} disabled={busy} className="w-full">
             {busy ? "…" : "Activer les notifications"}
-          </button>
+          </PillButton>
         )}
 
         {status === "subscribed" && (
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-emerald-600">Activées ✅</span>
-            <button
-              onClick={disable}
-              disabled={busy}
-              className="rounded-full bg-blush-50 px-3 py-1.5 text-xs font-bold text-blush-500 transition active:scale-95 disabled:opacity-50"
-            >
-              Désactiver
-            </button>
+            <span className="text-sm font-semibold text-blush-600">Activées</span>
+            <Toggle checked onChange={disable} disabled={busy} label="Désactiver les notifications" />
           </div>
         )}
       </div>
