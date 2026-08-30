@@ -8,7 +8,7 @@ import {
   REFS_BUCKET,
   VOICES_BUCKET,
 } from "@/lib/supabase";
-import { getCachedSignedUrl } from "@/lib/signedUrlCache";
+import { getCachedSignedUrl, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
 import { useIdentity } from "@/lib/identity";
 import type { ChatReadRow, MessageRow, PhotoRow, RefRow } from "@/lib/types";
 import MessageBubble from "@/components/MessageBubble";
@@ -201,7 +201,7 @@ export default function ChatPage() {
     setViewingRef(ref);
     setViewingRefUrl(null);
     if (ref.media_path) {
-      const url = await getCachedSignedUrl(REFS_BUCKET, ref.media_path, 3600);
+      const url = await getCachedSignedUrl(REFS_BUCKET, ref.media_path, LONG_TTL_SECONDS);
       setViewingRefUrl(url);
     }
   }

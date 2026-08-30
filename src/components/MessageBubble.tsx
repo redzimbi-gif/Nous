@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PHOTOS_BUCKET, REFS_BUCKET } from "@/lib/supabase";
-import { getCachedSignedUrl } from "@/lib/signedUrlCache";
+import { getCachedSignedUrl, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
 import type { MessageRow, PhotoRow, RefRow } from "@/lib/types";
 import { COLOR_CLASSES } from "@/lib/identity";
 import VoiceMessage from "@/components/VoiceMessage";
@@ -42,7 +42,7 @@ export default function MessageBubble({
   useEffect(() => {
     if (!photo) return;
     let active = true;
-    getCachedSignedUrl(PHOTOS_BUCKET, photo.storage_path, 3600).then((url) => {
+    getCachedSignedUrl(PHOTOS_BUCKET, photo.storage_path, LONG_TTL_SECONDS).then((url) => {
       if (active) setImgUrl(url);
     });
     return () => {
@@ -53,7 +53,7 @@ export default function MessageBubble({
   useEffect(() => {
     if (!refItem?.media_path) return;
     let active = true;
-    getCachedSignedUrl(REFS_BUCKET, refItem.media_path, 3600).then((url) => {
+    getCachedSignedUrl(REFS_BUCKET, refItem.media_path, LONG_TTL_SECONDS).then((url) => {
       if (active) setRefMediaUrl(url);
     });
     return () => {

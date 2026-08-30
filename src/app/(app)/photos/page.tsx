@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase, PHOTOS_BUCKET } from "@/lib/supabase";
-import { getCachedSignedUrls } from "@/lib/signedUrlCache";
+import { getCachedSignedUrls, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
 import { useIdentity } from "@/lib/identity";
 import type { PhotoRow } from "@/lib/types";
 import Lightbox from "@/components/Lightbox";
@@ -52,7 +52,7 @@ export default function PhotosPage() {
     setPhotos(data);
     const paths = data.map((p) => p.storage_path);
     if (paths.length) {
-      const map = await getCachedSignedUrls(PHOTOS_BUCKET, paths, 3600);
+      const map = await getCachedSignedUrls(PHOTOS_BUCKET, paths, LONG_TTL_SECONDS);
       setUrls((prev) => ({ ...prev, ...map }));
     }
   }

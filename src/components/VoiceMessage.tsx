@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { VOICES_BUCKET } from "@/lib/supabase";
-import { getCachedSignedUrl } from "@/lib/signedUrlCache";
+import { getCachedSignedUrl, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
 
 let activeAudio: HTMLAudioElement | null = null;
 
@@ -21,7 +21,7 @@ export default function VoiceMessage({
 
   useEffect(() => {
     let active = true;
-    getCachedSignedUrl(VOICES_BUCKET, path, 3600).then((signedUrl) => {
+    getCachedSignedUrl(VOICES_BUCKET, path, LONG_TTL_SECONDS).then((signedUrl) => {
       if (active) setUrl(signedUrl);
     });
     return () => {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase, REFS_BUCKET } from "@/lib/supabase";
-import { getCachedSignedUrls } from "@/lib/signedUrlCache";
+import { getCachedSignedUrls, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
 import { useIdentity } from "@/lib/identity";
 import type { RefRow } from "@/lib/types";
 import RefModal, { type RefFormValues } from "@/components/RefModal";
@@ -27,7 +27,7 @@ export default function RefPage() {
     setItems(data);
     const paths = data.map((r) => r.media_path).filter(Boolean) as string[];
     if (paths.length) {
-      const map = await getCachedSignedUrls(REFS_BUCKET, paths, 3600);
+      const map = await getCachedSignedUrls(REFS_BUCKET, paths, LONG_TTL_SECONDS);
       setUrls((prev) => ({ ...prev, ...map }));
     }
   }
