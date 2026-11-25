@@ -1,5 +1,10 @@
 "use client";
 
+import { useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
+import { Sheet } from "@/components/ui/Sheet";
+import { cn } from "@/lib/cn";
 import type { RefRow } from "@/lib/types";
 
 export default function RefDetail({
@@ -15,37 +20,18 @@ export default function RefDetail({
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-blush-900/40 backdrop-blur-sm sm:items-center"
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-t-3xl bg-white p-6 sm:rounded-3xl"
-      >
+    <Sheet open onClose={onClose} title={item.title}>
+      <div className="space-y-4 px-3 pb-1">
         {url && item.media_type === "image" && (
-          <img src={url} alt="" className="mb-4 max-h-72 w-full rounded-2xl object-cover" />
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="" className="max-h-72 w-full rounded-3xl object-cover" />
         )}
-        {url && item.media_type === "video" && (
-          <video src={url} controls className="mb-4 max-h-72 w-full rounded-2xl" />
-        )}
+        {url && item.media_type === "video" && <video src={url} controls playsInline className="max-h-72 w-full rounded-3xl" />}
 
-        <div className="mb-1 flex items-start justify-between gap-2">
-          <h2 className="text-lg font-extrabold text-blush-700">{item.title}</h2>
-          {onEdit && (
-            <button
-              onClick={onEdit}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-blush-300 transition hover:text-blush-500 active:scale-90"
-              aria-label="Modifier"
-            >
-              ✎
-            </button>
-          )}
-        </div>
-        <p className="mb-4 text-xs text-blush-300">
-          Ajouté par {item.created_by} ·{" "}
-          {new Date(item.created_at).toLocaleDateString("fr-FR")}
+        <p className="text-sm text-muted">
+          Ajouté par {item.created_by} · {new Date(item.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
         </p>
 
         {item.link && (
@@ -53,29 +39,37 @@ export default function RefDetail({
             href={item.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="mb-4 block truncate rounded-xl bg-blush-50 px-3 py-2.5 text-sm font-semibold text-blush-600 transition active:scale-[0.98]"
+            className="flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-3 ring-1 ring-line transition active:scale-[0.99]"
           >
-            🔗 {item.link}
+            <Icon name="link" size={20} className="shrink-0 text-primary-ink" />
+            <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-primary-ink">{item.link}</span>
+            <Icon name="arrowRight" size={18} className="shrink-0 text-subtle" />
           </a>
         )}
 
-        <div className="flex gap-2">
-          {onDelete && (
-            <button
-              onClick={onDelete}
-              className="flex-1 rounded-xl bg-red-50 py-3 font-bold text-red-500 transition active:scale-[0.98]"
-            >
-              Supprimer
-            </button>
+        <div className={cn("grid gap-3", onEdit ? "grid-cols-2" : "grid-cols-1")}>
+          {onEdit && (
+            <Button variant="soft" size="lg" onClick={onEdit}>
+              <Icon name="edit" size={18} />
+              Modifier
+            </Button>
           )}
-          <button
-            onClick={onClose}
-            className="flex-1 rounded-xl bg-blush-50 py-3 font-bold text-blush-500 transition active:scale-[0.98]"
-          >
+          <Button variant={onEdit ? "primary" : "soft"} size="lg" onClick={onClose}>
             Fermer
-          </button>
+          </Button>
         </div>
+
+        {onDelete && (
+          <button
+            type="button"
+            onClick={() => (confirmDelete ? onDelete() : setConfirmDelete(true))}
+            className={cn("mx-auto flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold transition active:scale-95", confirmDelete ? "bg-danger text-primary-on" : "text-danger")}
+          >
+            <Icon name="trash" size={17} />
+            {confirmDelete ? "Confirmer la suppression" : "Supprimer la réf"}
+          </button>
+        )}
       </div>
-    </div>
+    </Sheet>
   );
 }

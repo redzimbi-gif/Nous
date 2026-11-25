@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@fontsource-variable/fredoka": "^5.3.0",
+    "@fontsource-variable/nunito": "^5.3.0",
     "@supabase/supabase-js": "^2.45.4",
     "next": "16.3.1",
     "react": "^19.0.0",

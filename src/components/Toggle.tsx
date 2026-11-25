@@ -1,5 +1,8 @@
 "use client";
 
+import { cn } from "@/lib/cn";
+import { Icon } from "@/components/ui/Icon";
+
 export default function Toggle({
   checked,
   onChange,
@@ -19,16 +22,18 @@ export default function Toggle({
       aria-label={label}
       onClick={onChange}
       disabled={disabled}
-      className={`relative flex h-9 w-16 shrink-0 items-center rounded-full p-1 transition-colors disabled:opacity-50 ${
-        checked ? "bg-grape-100" : "bg-gray-200"
-      }`}
+      className={cn(
+        "relative flex h-8 w-14 shrink-0 items-center rounded-full p-1 transition-colors duration-200 disabled:opacity-50",
+        checked ? "bg-tint" : "bg-ink/10",
+      )}
     >
       <span
-        className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white shadow-sm transition-transform ${
-          checked ? "translate-x-7 bg-grape-500" : "translate-x-0 bg-gray-500"
-        }`}
+        className={cn(
+          "flex size-6 items-center justify-center rounded-full shadow-sm transition-transform duration-200",
+          checked ? "translate-x-6 bg-primary text-primary-on" : "translate-x-0 bg-subtle text-surface",
+        )}
       >
-        {checked ? "✓" : "✕"}
+        <Icon name={checked ? "check" : "x"} size={14} strokeWidth={3} />
       </span>
     </button>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import type { BattleshipGame, Ship, ShipCell } from "@/lib/types";
@@ -18,7 +17,7 @@ import {
   sunkShips,
   type Orientation,
 } from "@/lib/battleship";
-import GameReactions from "@/components/GameReactions";
+import GameHeader from "@/components/GameHeader";
 import { sendNotification } from "@/lib/notify";
 
 export default function BatailleNavalePage() {
@@ -197,27 +196,11 @@ export default function BatailleNavalePage() {
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
-      <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Link href="/jeux" className="text-xl text-blush-400" aria-label="Retour">
-            ←
-          </Link>
-          <h1 className="text-lg font-extrabold text-blush-700">🚢 Bataille navale</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <GameReactions gameKey="bataille" />
-          <button
-            onClick={startNewGame}
-            className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white"
-          >
-            Nouvelle partie
-          </button>
-        </div>
-      </header>
+      <GameHeader title="Bataille navale" gameKey="bataille" onNewGame={startNewGame} />
 
       <div className="flex flex-1 flex-col items-center gap-3 px-4 py-6">
         {Object.keys(score).length > 0 && (
-          <div className="flex gap-4 text-sm font-semibold text-blush-500">
+          <div className="flex gap-4 text-sm font-semibold text-primary-ink">
             {Object.entries(score).map(([n, wins]) => (
               <span key={n}>
                 {n} : {wins}
@@ -226,16 +209,16 @@ export default function BatailleNavalePage() {
           </div>
         )}
 
-        {game === undefined && <p className="text-sm text-blush-300">Chargement…</p>}
+        {game === undefined && <p className="text-sm text-muted">Chargement…</p>}
 
         {game === null && (
-          <p className="mt-10 text-center text-sm text-blush-300">
+          <p className="mt-10 text-center text-sm text-muted">
             Aucune partie en cours — lance-en une avec le bouton en haut 👆
           </p>
         )}
 
         {game && !myRole && (
-          <p className="mt-10 text-center text-sm text-blush-300">
+          <p className="mt-10 text-center text-sm text-muted">
             Partie déjà en cours entre {game.a_name} et {game.b_name} — attends la
             prochaine 👀
           </p>
@@ -251,8 +234,8 @@ export default function BatailleNavalePage() {
                     i < draftShips.length
                       ? "bg-emerald-100 text-emerald-700"
                       : i === draftShips.length
-                      ? "bg-blush-500 text-white"
-                      : "bg-blush-50 text-blush-300"
+                      ? "bg-primary text-white"
+                      : "bg-surface-2 text-muted"
                   }`}
                 >
                   {def.name} ({def.length})
@@ -260,13 +243,13 @@ export default function BatailleNavalePage() {
               ))}
             </div>
 
-            <p className="text-center text-sm font-semibold text-blush-700">
+            <p className="text-center text-sm font-semibold text-ink">
               {nextShipDef
                 ? `Place ton ${nextShipDef.name.toLowerCase()} (${nextShipDef.length} cases)`
                 : "Flotte complète !"}
             </p>
 
-            <div className="grid w-full max-w-[360px] grid-cols-10 gap-[2px] rounded-lg bg-blush-100 p-[2px]">
+            <div className="grid w-full max-w-[360px] grid-cols-10 gap-[2px] rounded-lg bg-tint p-[2px]">
               {Array.from({ length: GRID_SIZE }).map((_, r) =>
                 Array.from({ length: GRID_SIZE }).map((_, c) => {
                   const occupied = isHit(draftShips, { r, c });
@@ -276,7 +259,7 @@ export default function BatailleNavalePage() {
                       onClick={() => handlePlacementCellClick(r, c)}
                       disabled={!nextShipDef}
                       className={`aspect-square rounded-[3px] ${
-                        occupied ? "bg-blush-500" : "bg-white active:bg-blush-50"
+                        occupied ? "bg-primary" : "bg-surface active:bg-surface-2"
                       }`}
                     />
                   );
@@ -293,20 +276,20 @@ export default function BatailleNavalePage() {
             <div className="flex flex-wrap items-center justify-center gap-2">
               <button
                 onClick={() => setOrientation((o) => (o === "h" ? "v" : "h"))}
-                className="rounded-full bg-blush-100 px-3 py-1.5 text-xs font-bold text-blush-600"
+                className="rounded-full bg-tint px-3 py-1.5 text-xs font-bold text-primary-ink"
               >
                 {orientation === "h" ? "↔ Horizontal" : "↕ Vertical"}
               </button>
               <button
                 onClick={() => setDraftShips(randomPlacement())}
-                className="rounded-full bg-blush-100 px-3 py-1.5 text-xs font-bold text-blush-600"
+                className="rounded-full bg-tint px-3 py-1.5 text-xs font-bold text-primary-ink"
               >
                 🎲 Aléatoire
               </button>
               <button
                 onClick={() => setDraftShips(draftShips.slice(0, -1))}
                 disabled={!draftShips.length}
-                className="rounded-full bg-blush-100 px-3 py-1.5 text-xs font-bold text-blush-600 disabled:opacity-40"
+                className="rounded-full bg-tint px-3 py-1.5 text-xs font-bold text-primary-ink disabled:opacity-40"
               >
                 ↩ Annuler
               </button>
@@ -327,7 +310,7 @@ export default function BatailleNavalePage() {
         {game && myRole && iAmReady && !bothReady && (
           <div className="mt-10 text-center">
             <p className="text-4xl">⏳</p>
-            <p className="mt-2 text-sm text-blush-400">
+            <p className="mt-2 text-sm text-muted">
               Ta flotte est prête ! En attente que{" "}
               {myRole === "A" ? game.b_name : game.a_name} place la sienne…
             </p>
@@ -336,7 +319,7 @@ export default function BatailleNavalePage() {
 
         {game && myRole && bothReady && (
           <>
-            <p className="text-center text-sm font-semibold text-blush-700">
+            <p className="text-center text-sm font-semibold text-ink">
               {game.winner && game.winner === myRole && "Tu as gagné ! 🎉"}
               {game.winner && game.winner !== myRole && "Tu as perdu… 😢"}
               {!game.winner &&
@@ -346,7 +329,7 @@ export default function BatailleNavalePage() {
             </p>
 
             {lastShotResult && (
-              <p className="text-center text-sm font-bold text-blush-500">
+              <p className="text-center text-sm font-bold text-primary-ink">
                 {lastShotResult === "sunk" && "🔥 Coulé !"}
                 {lastShotResult === "hit" && "💥 Touché !"}
                 {lastShotResult === "miss" && "🌊 À l'eau !"}
@@ -354,10 +337,10 @@ export default function BatailleNavalePage() {
             )}
 
             <div className="w-full max-w-[360px]">
-              <p className="mb-1 text-center text-xs font-bold text-blush-400">
+              <p className="mb-1 text-center text-xs font-bold text-muted">
                 Flotte adverse — {fleetSunk}/{SHIP_DEFS.length} coulés
               </p>
-              <div className="grid grid-cols-10 gap-[2px] rounded-lg bg-blush-200 p-[2px]">
+              <div className="grid grid-cols-10 gap-[2px] rounded-lg bg-tint p-[2px]">
                 {Array.from({ length: GRID_SIZE }).map((_, r) =>
                   Array.from({ length: GRID_SIZE }).map((_, c) => {
                     const shot = myShots.some((s) => s.r === r && s.c === c);
@@ -388,8 +371,8 @@ export default function BatailleNavalePage() {
             </div>
 
             <div className="w-full max-w-[360px]">
-              <p className="mb-1 text-center text-xs font-bold text-blush-400">Ta flotte</p>
-              <div className="grid grid-cols-10 gap-[2px] rounded-lg bg-blush-100 p-[2px]">
+              <p className="mb-1 text-center text-xs font-bold text-muted">Ta flotte</p>
+              <div className="grid grid-cols-10 gap-[2px] rounded-lg bg-tint p-[2px]">
                 {Array.from({ length: GRID_SIZE }).map((_, r) =>
                   Array.from({ length: GRID_SIZE }).map((_, c) => {
                     const hasShip = isHit(myShips, { r, c });
@@ -405,10 +388,10 @@ export default function BatailleNavalePage() {
                             : shot && hasShip
                             ? "bg-red-400"
                             : hasShip
-                            ? "bg-blush-400"
+                            ? "bg-primary/70"
                             : shot
-                            ? "bg-blush-50"
-                            : "bg-white"
+                            ? "bg-surface-2"
+                            : "bg-surface"
                         }`}
                       >
                         {shot && (hasShip ? "🔥" : "•")}
@@ -419,7 +402,7 @@ export default function BatailleNavalePage() {
               </div>
             </div>
 
-            <p className="text-xs text-blush-300">
+            <p className="text-xs text-muted">
               Toi : {myRole} · {game.a_name} vs {game.b_name}
             </p>
           </>

@@ -1,34 +1,6 @@
-import Link from "next/link";
-import NotificationsCard from "@/components/NotificationsCard";
+import { redirect } from "next/navigation";
 
-const ITEMS = [
-  { href: "/jeux", icon: "🎮", label: "Jeux", desc: "Morpion, dames, bataille, Uno" },
-  { href: "/ref", icon: "🖼️", label: "Armoire à ref", desc: "Titre, lien, photo/vidéo" },
-];
-
+// L'ancien onglet « Plus » est remplacé par le menu de l'avatar ; on garde l'adresse pour les anciens liens.
 export default function PlusPage() {
-  return (
-    <div className="flex h-full flex-col overflow-y-auto">
-      <header className="border-b border-blush-100 bg-white px-4 py-3">
-        <h1 className="text-lg font-extrabold text-blush-700">⋯ Plus</h1>
-      </header>
-
-      <div className="space-y-2 p-4">
-        {ITEMS.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm transition active:scale-[0.98]"
-          >
-            <span className="text-3xl">{item.icon}</span>
-            <span>
-              <span className="block font-bold text-blush-800">{item.label}</span>
-              <span className="block text-xs text-blush-400">{item.desc}</span>
-            </span>
-          </Link>
-        ))}
-        <NotificationsCard />
-      </div>
-    </div>
-  );
+  redirect("/reglages");
 }

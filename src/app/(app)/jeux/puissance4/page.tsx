@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import type { Connect4Game, Connect4Player } from "@/lib/types";
@@ -13,7 +12,7 @@ import {
   dropPiece,
   isBoardFull,
 } from "@/lib/connect4";
-import GameReactions from "@/components/GameReactions";
+import GameHeader from "@/components/GameHeader";
 import { sendNotification } from "@/lib/notify";
 
 export default function Puissance4Page() {
@@ -132,27 +131,11 @@ export default function Puissance4Page() {
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
-      <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Link href="/jeux" className="text-xl text-blush-400" aria-label="Retour">
-            ←
-          </Link>
-          <h1 className="text-lg font-extrabold text-blush-700">🔴🟡 Puissance 4</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <GameReactions gameKey="puissance4" />
-          <button
-            onClick={startNewGame}
-            className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white transition active:scale-95"
-          >
-            Nouvelle partie
-          </button>
-        </div>
-      </header>
+      <GameHeader title="Puissance 4" gameKey="puissance4" onNewGame={startNewGame} />
 
       <div className="flex flex-1 flex-col items-center gap-3 px-4 py-6">
         {Object.keys(score).length > 0 && (
-          <div className="flex gap-4 text-sm font-semibold text-blush-500">
+          <div className="flex gap-4 text-sm font-semibold text-primary-ink">
             {Object.entries(score).map(([n, wins]) => (
               <span key={n}>
                 {n} : {wins}
@@ -161,17 +144,17 @@ export default function Puissance4Page() {
           </div>
         )}
 
-        {game === undefined && <p className="text-sm text-blush-300">Chargement…</p>}
+        {game === undefined && <p className="text-sm text-muted">Chargement…</p>}
 
         {game === null && (
-          <p className="mt-10 text-center text-sm text-blush-300">
+          <p className="mt-10 text-center text-sm text-muted">
             Aucune partie en cours — lance-en une avec le bouton en haut 👆
           </p>
         )}
 
         {game && (
           <>
-            <p className="text-center text-sm font-semibold text-blush-700">
+            <p className="text-center text-sm font-semibold text-ink">
               {game.winner === "draw" && "Match nul ! 🤝"}
               {game.winner === "A" && `${game.a_name} a gagné ! 🎉`}
               {game.winner === "B" && game.b_name && `${game.b_name} a gagné ! 🎉`}
@@ -182,7 +165,7 @@ export default function Puissance4Page() {
               {!game.winner && game.b_name && !myRole && "Partie entre vous deux"}
             </p>
 
-            <div className="grid w-full max-w-[360px] grid-cols-7 gap-1.5 rounded-2xl border-4 border-blush-900 bg-blush-900 p-2 shadow-md">
+            <div className="grid w-full max-w-[360px] grid-cols-7 gap-1.5 rounded-2xl border-4 border-ink bg-ink p-2 shadow-card">
               {Array.from({ length: ROWS }).map((_, r) =>
                 Array.from({ length: COLS }).map((_, c) => {
                   const cell = game.board[r][c];
@@ -196,7 +179,7 @@ export default function Puissance4Page() {
                       {cell && (
                         <span
                           className={`h-[82%] w-[82%] rounded-full shadow-inner ${
-                            cell === "A" ? "bg-blush-500" : "bg-sky-400"
+                            cell === "A" ? "bg-primary" : "bg-sky-400"
                           }`}
                         />
                       )}
@@ -206,7 +189,7 @@ export default function Puissance4Page() {
               )}
             </div>
 
-            <p className="text-xs text-blush-300">
+            <p className="text-xs text-muted">
               Toi : {myRole ?? "spectateur"} · {game.a_name} joue en rose 🩷
               {game.b_name ? ` · ${game.b_name} joue en bleu 🩵` : ""}
             </p>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import type { UnoCard, UnoColor, UnoGame } from "@/lib/types";
@@ -13,7 +12,7 @@ import {
   dealNewGame,
   effectOf,
 } from "@/lib/uno";
-import GameReactions from "@/components/GameReactions";
+import GameHeader from "@/components/GameHeader";
 import { sendNotification } from "@/lib/notify";
 
 const COLOR_ORDER: UnoColor[] = ["red", "yellow", "green", "blue"];
@@ -209,27 +208,11 @@ export default function UnoPage() {
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
-      <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Link href="/jeux" className="text-xl text-blush-400" aria-label="Retour">
-            ←
-          </Link>
-          <h1 className="text-lg font-extrabold text-blush-700">🎴 Uno</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <GameReactions gameKey="uno" />
-          <button
-            onClick={startNewGame}
-            className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white transition active:scale-95"
-          >
-            Nouvelle partie
-          </button>
-        </div>
-      </header>
+      <GameHeader title="Uno" gameKey="uno" onNewGame={startNewGame} />
 
       <div className="flex flex-1 flex-col items-center gap-3 px-4 py-4">
         {Object.keys(score).length > 0 && (
-          <div className="flex gap-4 text-sm font-semibold text-blush-500">
+          <div className="flex gap-4 text-sm font-semibold text-primary-ink">
             {Object.entries(score).map(([n, wins]) => (
               <span key={n}>
                 {n} : {wins}
@@ -238,17 +221,17 @@ export default function UnoPage() {
           </div>
         )}
 
-        {game === undefined && <p className="text-sm text-blush-300">Chargement…</p>}
+        {game === undefined && <p className="text-sm text-muted">Chargement…</p>}
 
         {game === null && (
-          <p className="mt-10 text-center text-sm text-blush-300">
+          <p className="mt-10 text-center text-sm text-muted">
             Aucune partie en cours — lance-en une avec le bouton en haut 👆
           </p>
         )}
 
         {game && (
           <>
-            <p className="text-center text-sm font-semibold text-blush-700">
+            <p className="text-center text-sm font-semibold text-ink">
               {game.winner === "A" && `${game.a_name} a gagné ! 🎉`}
               {game.winner === "B" && game.b_name && `${game.b_name} a gagné ! 🎉`}
               {!game.winner && !game.b_name && "En attente d'un·e partenaire…"}
@@ -258,7 +241,7 @@ export default function UnoPage() {
             </p>
 
             {!game.winner && game.b_name && myHand.length === 1 && (
-              <p className="animate-pop-in text-center text-lg font-extrabold text-blush-500">
+              <p className="animate-pop-in text-center text-lg font-extrabold text-primary-ink">
                 🎉 {myRole === "A" ? game.a_name : game.b_name} a UNO !
               </p>
             )}
@@ -275,7 +258,7 @@ export default function UnoPage() {
               {Array.from({ length: opponentCount }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-10 w-7 shrink-0 rounded-md bg-blush-800 shadow-sm"
+                  className="h-10 w-7 shrink-0 rounded-md bg-ink shadow-card"
                 />
               ))}
             </div>
@@ -285,7 +268,7 @@ export default function UnoPage() {
               <button
                 onClick={drawCard}
                 disabled={!isMyTurn || game.draw_pile.length === 0}
-                className="flex h-20 w-14 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-blush-300 text-xs font-bold text-blush-400 transition active:scale-90 disabled:opacity-40"
+                className="flex h-20 w-14 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-primary/40 text-xs font-bold text-muted transition active:scale-90 disabled:opacity-40"
               >
                 <span className="text-lg">🂠</span>
                 Piocher
@@ -295,7 +278,7 @@ export default function UnoPage() {
               {topCard && (
                 <div className="flex flex-col items-center gap-1">
                   <div
-                    className={`flex h-20 w-14 items-center justify-center rounded-xl text-2xl font-extrabold text-white shadow-md ${UNO_COLOR_BG[topCard.color]}`}
+                    className={`flex h-20 w-14 items-center justify-center rounded-xl text-2xl font-extrabold text-white shadow-card ${UNO_COLOR_BG[topCard.color]}`}
                   >
                     {cardSymbol(topCard.value)}
                   </div>
@@ -309,8 +292,8 @@ export default function UnoPage() {
 
             {/* Sélecteur de couleur pour une carte joker */}
             {wildPending && (
-              <div className="flex flex-col items-center gap-2 rounded-2xl bg-white p-3 shadow-md">
-                <p className="text-xs font-semibold text-blush-500">Choisis une couleur</p>
+              <div className="flex flex-col items-center gap-2 rounded-2xl bg-surface p-3 shadow-card">
+                <p className="text-xs font-semibold text-primary-ink">Choisis une couleur</p>
                 <div className="flex gap-2">
                   {COLOR_ORDER.map((c) => (
                     <button
@@ -323,7 +306,7 @@ export default function UnoPage() {
                 </div>
                 <button
                   onClick={() => setWildPending(null)}
-                  className="text-xs font-semibold text-blush-300"
+                  className="text-xs font-semibold text-muted"
                 >
                   Annuler
                 </button>
@@ -332,7 +315,7 @@ export default function UnoPage() {
 
             {/* Ma main */}
             <div className="mt-auto w-full">
-              <p className="mb-1.5 text-center text-xs font-bold text-blush-400">
+              <p className="mb-1.5 text-center text-xs font-bold text-muted">
                 Ta main ({myHand.length})
               </p>
               <div className="flex gap-1.5 overflow-x-auto pb-2">
@@ -344,7 +327,7 @@ export default function UnoPage() {
                       key={card.id}
                       onClick={() => playCard(card)}
                       disabled={!playable}
-                      className={`flex h-20 w-14 shrink-0 items-center justify-center rounded-xl text-2xl font-extrabold text-white shadow-md transition active:scale-90 disabled:opacity-40 ${UNO_COLOR_BG[card.color]}`}
+                      className={`flex h-20 w-14 shrink-0 items-center justify-center rounded-xl text-2xl font-extrabold text-white shadow-card transition active:scale-90 disabled:opacity-40 ${UNO_COLOR_BG[card.color]}`}
                     >
                       {cardSymbol(card.value)}
                     </button>
@@ -353,7 +336,7 @@ export default function UnoPage() {
               </div>
             </div>
 
-            <p className="text-xs text-blush-300">
+            <p className="text-xs text-muted">
               Toi : {myRole ?? "spectateur"} · {game.a_name}
               {game.b_name ? ` vs ${game.b_name}` : ""}
             </p>

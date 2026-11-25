@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Logo } from "@/components/Logo";
+import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/cn";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,7 +23,7 @@ export default function LoginPage() {
     });
     setLoading(false);
     if (res.ok) {
-      router.push("/chat");
+      router.push("/accueil");
       router.refresh();
     } else {
       setError(true);
@@ -29,38 +32,37 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-[100dvh] flex-col items-center justify-center bg-blush-50 px-6">
-      <div className="w-full max-w-sm text-center">
-        <div className="mb-6 text-5xl">💌</div>
-        <h1 className="mb-1 text-2xl font-extrabold text-blush-700">Nous</h1>
-        <p className="mb-8 text-sm text-blush-500">
-          Notre petit espace, rien qu&apos;à nous
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <main className="page-glow flex min-h-[100dvh] flex-col items-center justify-center bg-bg px-6 text-ink">
+      <div className="w-full max-w-sm animate-rise text-center">
+        <Logo className="mb-3 justify-center" />
+        <p className="mb-9 text-[15px] text-muted">Notre petit espace, rien qu&apos;à nous.</p>
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-4xl bg-surface p-6 text-left shadow-float ring-1 ring-line">
+          <label htmlFor="code" className="block text-sm font-semibold text-muted">
+            Code secret
+          </label>
           <input
             type="password"
             name="code"
             id="code"
             autoFocus
+            autoComplete="current-password"
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="Code secret"
-            className={`w-full rounded-2xl border-2 bg-white px-5 py-4 text-center text-lg outline-none transition focus-visible:ring-2 focus-visible:ring-blush-200 ${
-              error
-                ? "animate-shake border-red-400"
-                : "border-blush-200 focus:border-blush-400"
-            }`}
+            aria-invalid={error}
+            aria-describedby={error ? "code-error" : undefined}
+            className={cn(
+              "h-14 w-full rounded-2xl bg-surface-2 px-5 text-center text-lg outline-none ring-1 transition focus:ring-2",
+              error ? "animate-shake ring-danger focus:ring-danger" : "ring-line focus:ring-primary",
+            )}
           />
           {error && (
-            <p className="text-sm text-red-500">Code incorrect, réessaie 💭</p>
+            <p id="code-error" role="alert" className="text-sm font-semibold text-danger">
+              Ce n&apos;est pas le bon code. Réessayez.
+            </p>
           )}
-          <button
-            type="submit"
-            disabled={loading || !code}
-            className="w-full rounded-2xl bg-blush-500 py-4 text-lg font-bold text-white shadow-lg shadow-blush-200 transition hover:bg-blush-600 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
-          >
-            {loading ? "…" : "Entrer"}
-          </button>
+          <Button type="submit" size="lg" block disabled={loading || !code}>
+            {loading ? "Un instant…" : "Entrer"}
+          </Button>
         </form>
       </div>
     </main>

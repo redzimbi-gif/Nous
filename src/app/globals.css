@@ -2,20 +2,136 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Palette sémantique : les couleurs historiques de Nous (couple).
+   Valeurs en canaux « R G B » pour que Tailwind applique l'opacité (bg-primary/10). */
+:root {
+  --bg: 255 250 243;
+  --surface: 255 255 255;
+  --surface-2: 247 241 251;
+  --ink: 63 31 84;
+  --muted: 91 74 87;
+  --subtle: 125 107 112;
+  --primary: 143 82 186;
+  --on-primary: 255 255 255;
+  --primary-ink: 118 63 156;
+  --tint: 236 220 247;
+  --on-tint: 77 37 104;
+  --accent: 240 82 111;
+  --warm: 255 233 236;
+  --on-warm: 149 38 60;
+  --ok: 227 244 234;
+  --on-ok: 29 91 58;
+  --danger: 149 38 60;
+  --danger-soft: 255 233 236;
+}
+
+/* Teintes des avatars et des bulles. */
+.tone-lilac { --tone-bg: 220 189 239; --tone-ink: 63 31 84; }
+.tone-rose  { --tone-bg: 255 209 217; --tone-ink: 124 36 54; }
+.tone-sun   { --tone-bg: 255 241 214; --tone-ink: 107 67 0; }
+.tone-mint  { --tone-bg: 227 244 234; --tone-ink: 29 91 58; }
+.tone-sky   { --tone-bg: 227 238 249; --tone-ink: 31 74 122; }
+.tone-peach { --tone-bg: 255 227 207; --tone-ink: 107 52 16; }
+
+/* Couleurs des catégories d'événements (agenda). */
+.cat-date { --cat-bg: 255 233 236; --cat-ink: 149 38 60; }
+.cat-anniversaire { --cat-bg: 236 220 247; --cat-ink: 77 37 104; }
+.cat-voyage { --cat-bg: 255 241 214; --cat-ink: 107 67 0; }
+.cat-travail { --cat-bg: 236 239 243; --cat-ink: 47 58 70; }
+.cat-sport { --cat-bg: 227 244 234; --cat-ink: 29 91 58; }
+.cat-autre { --cat-bg: 227 238 249; --cat-ink: 31 74 122; }
+
 html,
 body {
   height: 100%;
 }
 
-body {
-  background: #fff5f6;
-  color: #3b2430;
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  background: rgb(var(--bg));
 }
 
-::-webkit-scrollbar {
-  width: 6px;
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--ink));
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
 }
-::-webkit-scrollbar-thumb {
-  background: #ffd1d9;
-  border-radius: 999px;
+
+h1,
+h2,
+h3 {
+  font-family: "Fredoka Variable", "Fredoka", ui-rounded, system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--primary));
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgb(var(--tint));
+}
+
+/* Halo de couleur discret en haut de page. */
+.page-glow {
+  background:
+    radial-gradient(70% 38% at 50% -6%, rgb(var(--tint) / 0.75), transparent 72%),
+    radial-gradient(50% 30% at 100% 0%, rgb(var(--accent) / 0.1), transparent 70%);
+}
+
+/* Feuille qui monte du bas (élément <dialog> natif). */
+dialog.sheet {
+  margin: auto auto 0 auto;
+  width: min(100%, 480px);
+  max-width: 100%;
+  max-height: 90dvh;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  overflow: visible;
+}
+
+dialog.sheet::backdrop {
+  background: rgb(var(--ink) / 0.38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fade 0.25s ease-out both;
+}
+
+dialog.sheet[open] .sheet-panel {
+  animation: sheet-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Le splash est masqué avant le premier affichage quand il a déjà été vu dans la session. */
+html[data-splash="skip"] [data-splash-screen] {
+  display: none;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--ink) / 0.18) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

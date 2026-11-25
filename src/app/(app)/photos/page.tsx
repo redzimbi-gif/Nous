@@ -6,7 +6,11 @@ import { getCachedSignedUrls, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
 import { useIdentity } from "@/lib/identity";
 import type { PhotoRow } from "@/lib/types";
 import Lightbox from "@/components/Lightbox";
-import PillButton from "@/components/PillButton";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
+import { PageHeading } from "@/components/ui/PageHeading";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 function isSameDay(a: Date, b: Date): boolean {
   return (
@@ -41,6 +45,7 @@ export default function PhotosPage() {
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
@@ -50,6 +55,7 @@ export default function PhotosPage() {
       .order("created_at", { ascending: false });
     if (!data) return;
     setPhotos(data);
+    setLoaded(true);
     const paths = data.map((p) => p.storage_path);
     if (paths.length) {
       const map = await getCachedSignedUrls(PHOTOS_BUCKET, paths, LONG_TTL_SECONDS);
@@ -111,54 +117,56 @@ export default function PhotosPage() {
   const selected = selectedIndex !== null ? photos[selectedIndex] ?? null : null;
 
   return (
-    <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
-        <h1 className="text-lg font-extrabold text-blush-700">📷 Photos</h1>
-        <PillButton onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-          {uploading ? "Envoi…" : "+ Ajouter"}
-        </PillButton>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          hidden
-          onChange={(e) => e.target.files && handleFiles(e.target.files)}
-        />
-      </header>
+    <div className="h-full overflow-y-auto px-5 pb-6">
+      <PageHeading
+        title="Photos"
+        subtitle={loaded ? (photos.length === 0 ? "Votre album commun" : `${photos.length} souvenir${photos.length > 1 ? "s" : ""}`) : undefined}
+        action={
+          <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="shrink-0">
+            <Icon name="plus" size={18} strokeWidth={2.2} />
+            {uploading ? "Envoi…" : "Ajouter"}
+          </Button>
+        }
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={(e) => {
+          if (e.target.files) handleFiles(e.target.files);
+          e.target.value = "";
+        }}
+      />
 
-      <div className="flex-1 overflow-y-auto p-2">
-        {photos.length === 0 ? (
-          <p className="mt-20 text-center text-sm text-blush-300">
-            Aucune photo pour l&apos;instant 🤍
-          </p>
-        ) : (
-          groups.map((group) => (
-            <div key={group.key} className="mb-3">
-              <h2 className="mb-1.5 mt-2 px-1 text-sm font-bold text-blush-400">
-                {group.label}
-              </h2>
-              <div className="grid grid-cols-3 gap-1">
-                {group.items.map(({ photo: p, index: i }) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setSelectedIndex(i)}
-                    className="aspect-square overflow-hidden rounded-lg bg-blush-100 transition active:scale-95"
-                  >
-                    {urls[p.storage_path] && (
-                      <img
-                        src={urls[p.storage_path]}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    )}
-                  </button>
-                ))}
-              </div>
+      {!loaded ? (
+        <div className="grid grid-cols-3 gap-1.5" aria-hidden="true">
+          {Array.from({ length: 9 }, (_, i) => (
+            <Skeleton key={i} className="aspect-square rounded-2xl" />
+          ))}
+        </div>
+      ) : photos.length === 0 ? (
+        <EmptyState icon="photo" title="Pas encore de photo" action={<Button onClick={() => fileInputRef.current?.click()}>Ajouter une photo</Button>}>
+          Les photos que vous envoyez dans le chat atterrissent aussi ici.
+        </EmptyState>
+      ) : (
+        groups.map((group) => (
+          <section key={group.key} className="mb-5" aria-label={group.label}>
+            <h2 className="mb-2 font-display text-[15px] font-semibold text-muted">{group.label}</h2>
+            <div className="grid grid-cols-3 gap-1.5">
+              {group.items.map(({ photo: p, index: i }) => (
+                <button key={p.id} type="button" onClick={() => setSelectedIndex(i)} className="aspect-square overflow-hidden rounded-2xl bg-tint transition active:scale-95" aria-label={`Photo de ${p.sender_name}`}>
+                  {urls[p.storage_path] && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={urls[p.storage_path]} alt="" className="h-full w-full object-cover" />
+                  )}
+                </button>
+              ))}
             </div>
-          ))
-        )}
-      </div>
+          </section>
+        ))
+      )}
 
       {selected && selectedIndex !== null && (
         <Lightbox
@@ -169,9 +177,7 @@ export default function PhotosPage() {
           hasPrev={selectedIndex > 0}
           hasNext={selectedIndex < photos.length - 1}
           onPrev={() => setSelectedIndex((i) => (i !== null ? Math.max(i - 1, 0) : i))}
-          onNext={() =>
-            setSelectedIndex((i) => (i !== null ? Math.min(i + 1, photos.length - 1) : i))
-          }
+          onNext={() => setSelectedIndex((i) => (i !== null ? Math.min(i + 1, photos.length - 1) : i))}
           onClose={() => setSelectedIndex(null)}
           onDelete={handleDelete}
         />

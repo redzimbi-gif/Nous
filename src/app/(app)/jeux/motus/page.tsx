@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import type { GuessWordGame } from "@/lib/types";
@@ -12,7 +11,7 @@ import {
   keyboardStatuses,
   randomWord,
 } from "@/lib/guessword";
-import GameReactions from "@/components/GameReactions";
+import GameHeader from "@/components/GameHeader";
 import { sendNotification } from "@/lib/notify";
 
 const KEYBOARD_ROWS = [
@@ -189,27 +188,11 @@ export default function MotusPage() {
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
-      <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Link href="/jeux" className="text-xl text-blush-400" aria-label="Retour">
-            ←
-          </Link>
-          <h1 className="text-lg font-extrabold text-blush-700">🔤 Motus</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <GameReactions gameKey="motus" />
-          <button
-            onClick={startNewGame}
-            className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white transition active:scale-95"
-          >
-            Nouvelle partie
-          </button>
-        </div>
-      </header>
+      <GameHeader title="Motus" gameKey="motus" onNewGame={startNewGame} />
 
       <div className="flex flex-1 flex-col items-center gap-3 px-4 py-6">
         {Object.keys(score).length > 0 && (
-          <div className="flex gap-4 text-sm font-semibold text-blush-500">
+          <div className="flex gap-4 text-sm font-semibold text-primary-ink">
             {Object.entries(score).map(([n, wins]) => (
               <span key={n}>
                 {n} : {wins}
@@ -218,17 +201,17 @@ export default function MotusPage() {
           </div>
         )}
 
-        {game === undefined && <p className="text-sm text-blush-300">Chargement…</p>}
+        {game === undefined && <p className="text-sm text-muted">Chargement…</p>}
 
         {game === null && (
-          <p className="mt-10 text-center text-sm text-blush-300">
+          <p className="mt-10 text-center text-sm text-muted">
             Aucune partie en cours — lance-en une avec le bouton en haut 👆
           </p>
         )}
 
         {game && (
           <>
-            <p className="min-h-[1.25rem] text-center text-sm font-semibold text-blush-700">
+            <p className="min-h-[1.25rem] text-center text-sm font-semibold text-ink">
               {game.winner === "draw" && `Perdu ! Le mot était ${game.word} 😅`}
               {game.winner === "A" && `${game.a_name} a trouvé le mot ! 🎉`}
               {game.winner === "B" && game.b_name && `${game.b_name} a trouvé le mot ! 🎉`}
@@ -265,10 +248,10 @@ export default function MotusPage() {
                               : status === "present"
                               ? "border-amber-400 bg-amber-400 text-white"
                               : status === "absent"
-                              ? "border-blush-200 bg-blush-200 text-blush-500"
+                              ? "border-tint bg-tint text-primary-ink"
                               : filled
-                              ? "border-blush-300 bg-white text-blush-700"
-                              : "border-blush-100 bg-white text-blush-700"
+                              ? "border-primary/40 bg-surface text-ink"
+                              : "border-line bg-surface text-ink"
                           }`}
                         >
                           {filled ? letter : ""}
@@ -292,7 +275,7 @@ export default function MotusPage() {
                           key={key}
                           onClick={submitGuess}
                           disabled={!isMyTurn || submitting}
-                          className="flex h-11 flex-[1.5] items-center justify-center rounded-lg bg-blush-500 text-xs font-bold text-white transition active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                          className="flex h-11 flex-[1.5] items-center justify-center rounded-lg bg-primary text-xs font-bold text-white transition active:scale-95 disabled:opacity-50 disabled:active:scale-100"
                         >
                           OK
                         </button>
@@ -304,7 +287,7 @@ export default function MotusPage() {
                           key={key}
                           onClick={pressBackspace}
                           disabled={!isMyTurn || submitting}
-                          className="flex h-11 flex-[1.5] items-center justify-center rounded-lg bg-blush-100 text-sm text-blush-500 transition active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                          className="flex h-11 flex-[1.5] items-center justify-center rounded-lg bg-tint text-sm text-primary-ink transition active:scale-95 disabled:opacity-50 disabled:active:scale-100"
                         >
                           ⌫
                         </button>
@@ -322,8 +305,8 @@ export default function MotusPage() {
                             : status === "present"
                             ? "bg-amber-400 text-white"
                             : status === "absent"
-                            ? "bg-blush-200 text-blush-400"
-                            : "bg-white text-blush-700 shadow-sm"
+                            ? "bg-tint text-muted"
+                            : "bg-surface text-ink shadow-card"
                         }`}
                       >
                         {key}
@@ -334,7 +317,7 @@ export default function MotusPage() {
               ))}
             </div>
 
-            <p className="text-xs text-blush-300">
+            <p className="text-xs text-muted">
               Toi : {myRole ?? "spectateur"} · {MAX_ATTEMPTS} essais pour trouver le mot
             </p>
           </>

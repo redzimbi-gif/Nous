@@ -1,5 +1,7 @@
 "use client";
 
+import { cn } from "@/lib/cn";
+
 export default function PillButton({
   children,
   onClick,
@@ -20,11 +22,11 @@ export default function PillButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-full py-3 font-display text-sm font-semibold tracking-wide transition active:scale-[0.98] disabled:opacity-50 ${
-        variant === "solid"
-          ? "bg-grape-500 text-white shadow-sm"
-          : "bg-grape-50 text-grape-600"
-      } ${className}`}
+      className={cn(
+        "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 font-display text-[15px] font-semibold transition duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50",
+        variant === "solid" ? "bg-primary text-primary-on shadow-press hover:brightness-105" : "bg-tint text-tint-ink hover:brightness-[0.97]",
+        className,
+      )}
     >
       {children}
     </button>

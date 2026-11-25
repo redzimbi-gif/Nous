@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import type { CheckersGame, CheckersPlayer } from "@/lib/types";
@@ -16,7 +15,7 @@ import {
   type CheckersMove,
   type CheckersPos,
 } from "@/lib/checkers";
-import GameReactions from "@/components/GameReactions";
+import GameHeader from "@/components/GameHeader";
 import { sendNotification } from "@/lib/notify";
 
 export default function DamesPage() {
@@ -183,27 +182,11 @@ export default function DamesPage() {
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
-      <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Link href="/jeux" className="text-xl text-blush-400" aria-label="Retour">
-            ←
-          </Link>
-          <h1 className="text-lg font-extrabold text-blush-700">⚫⚪ Dames</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <GameReactions gameKey="dames" />
-          <button
-            onClick={startNewGame}
-            className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white"
-          >
-            Nouvelle partie
-          </button>
-        </div>
-      </header>
+      <GameHeader title="Dames" gameKey="dames" onNewGame={startNewGame} />
 
       <div className="flex flex-1 flex-col items-center gap-3 px-4 py-6">
         {Object.keys(score).length > 0 && (
-          <div className="flex gap-4 text-sm font-semibold text-blush-500">
+          <div className="flex gap-4 text-sm font-semibold text-primary-ink">
             {Object.entries(score).map(([n, wins]) => (
               <span key={n}>
                 {n} : {wins}
@@ -212,17 +195,17 @@ export default function DamesPage() {
           </div>
         )}
 
-        {game === undefined && <p className="text-sm text-blush-300">Chargement…</p>}
+        {game === undefined && <p className="text-sm text-muted">Chargement…</p>}
 
         {game === null && (
-          <p className="mt-10 text-center text-sm text-blush-300">
+          <p className="mt-10 text-center text-sm text-muted">
             Aucune partie en cours — lance-en une avec le bouton en haut 👆
           </p>
         )}
 
         {game && (
           <>
-            <p className="text-center text-sm font-semibold text-blush-700">
+            <p className="text-center text-sm font-semibold text-ink">
               {game.winner === "A" && `${game.a_name} a gagné ! 🎉`}
               {game.winner === "B" && game.b_name && `${game.b_name} a gagné ! 🎉`}
               {!game.winner && !game.b_name && "En attente d'un·e partenaire…"}
@@ -236,7 +219,7 @@ export default function DamesPage() {
               {!game.winner && game.b_name && !myRole && "Partie entre vous deux"}
             </p>
 
-            <div className="grid w-full max-w-[360px] grid-cols-8 overflow-hidden rounded-2xl border-4 border-amber-950 shadow-md">
+            <div className="grid w-full max-w-[360px] grid-cols-8 overflow-hidden rounded-2xl border-4 border-amber-950 shadow-card">
               {Array.from({ length: 8 }).map((_, dr) =>
                 Array.from({ length: 8 }).map((_, dc) => {
                   const r = flip ? 7 - dr : dr;
@@ -267,8 +250,8 @@ export default function DamesPage() {
                       )}
                       {piece && (
                         <span
-                          className={`flex h-[76%] w-[76%] items-center justify-center rounded-full shadow-md ${
-                            piece.player === "A" ? "bg-blush-500" : "bg-sky-400"
+                          className={`flex h-[76%] w-[76%] items-center justify-center rounded-full shadow-card ${
+                            piece.player === "A" ? "bg-primary" : "bg-sky-400"
                           } ${isSelected ? "ring-4 ring-emerald-400" : ""} ${
                             isEligible ? "ring-2 ring-amber-300" : ""
                           }`}
@@ -282,7 +265,7 @@ export default function DamesPage() {
               )}
             </div>
 
-            <p className="text-xs text-blush-300">
+            <p className="text-xs text-muted">
               Toi : {myRole ?? "spectateur"} · {game.a_name} joue en rose 🩷
               {game.b_name ? ` · ${game.b_name} joue en bleu 🩵` : ""}
             </p>

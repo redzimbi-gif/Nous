@@ -18,6 +18,8 @@ export type MessageRow = {
   ephemeral_viewed_at: string | null;
   ephemeral_mirrored: boolean;
   saved: boolean;
+  /** Message auquel celui-ci répond (colonne ajoutée après coup : absente tant que la migration n'est pas appliquée). */
+  reply_to?: string | null;
   created_at: string;
 };
 

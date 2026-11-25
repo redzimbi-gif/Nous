@@ -1,7 +1,6 @@
-import BottomNav from "@/components/BottomNav";
-import StatusBar from "@/components/StatusBar";
-import MessageToast from "@/components/MessageToast";
+import AppShell from "@/components/shell/AppShell";
 import { IdentityProvider } from "@/lib/identity";
+import { StatusProvider } from "@/lib/status";
 
 export default function AppLayout({
   children,
@@ -10,12 +9,9 @@ export default function AppLayout({
 }) {
   return (
     <IdentityProvider>
-      <div className="flex h-[100dvh] flex-col bg-cream">
-        <StatusBar />
-        <MessageToast />
-        <div className="flex-1 overflow-hidden">{children}</div>
-        <BottomNav />
-      </div>
+      <StatusProvider>
+        <AppShell>{children}</AppShell>
+      </StatusProvider>
     </IdentityProvider>
   );
 }

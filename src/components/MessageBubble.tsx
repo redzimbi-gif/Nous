@@ -1,42 +1,104 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { PHOTOS_BUCKET, REFS_BUCKET } from "@/lib/supabase";
-import { getCachedSignedUrl, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
-import type { MessageRow, PhotoRow, RefRow } from "@/lib/types";
-import { COLOR_CLASSES } from "@/lib/identity";
+import { useEffect, useState, type ReactNode } from "react";
 import VoiceMessage from "@/components/VoiceMessage";
+import { Icon, type IconName } from "@/components/ui/Icon";
+import { cn } from "@/lib/cn";
+import { timeLabel } from "@/lib/chat";
+import { getCachedSignedUrl, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
+import { PHOTOS_BUCKET, REFS_BUCKET } from "@/lib/supabase";
+import type { Tone } from "@/lib/tone";
+import type { MessageRow, PhotoRow, RefRow } from "@/lib/types";
+
+export type Quote = { id: string; sender: string; preview: string };
+export type RefState = "loading" | "ready" | "deleted";
+
+function Ticks({ seen }: { seen: boolean }) {
+  return (
+    <span role="img" aria-label={seen ? "Vu" : "Envoyé"} className={cn("inline-flex items-center", seen ? "text-primary" : "text-subtle")}>
+      <Icon name="check" size={13} strokeWidth={2.4} />
+      {seen && <Icon name="check" size={13} strokeWidth={2.4} className="-ml-2" />}
+    </span>
+  );
+}
+
+/** Ligne de pièce jointe (réf, photo ou vidéo éphémère) : une pastille d'icône, un titre, une précision. */
+function AttachmentRow({ icon, title, hint, onClick, muted }: { icon: IconName; title: string; hint: string; onClick?: () => void; muted?: boolean }) {
+  const body: ReactNode = (
+    <>
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-ink/[0.07]">
+        <Icon name={icon} size={20} />
+      </span>
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block truncate text-sm font-bold">{title}</span>
+        <span className="block text-xs opacity-70">{hint}</span>
+      </span>
+    </>
+  );
+  const cls = cn("flex w-full min-w-[200px] items-center gap-3 rounded-2xl bg-ink/[0.05] p-2", muted && "opacity-70");
+  return onClick ? (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className={cn(cls, "transition active:scale-[0.98]")}
+    >
+      {body}
+    </button>
+  ) : (
+    <div className={cls}>{body}</div>
+  );
+}
 
 export default function MessageBubble({
   message,
   photo,
   refItem,
+  refState,
   isMine,
-  color,
+  tone,
   seen,
   status,
   pendingKind,
+  pendingPreview,
+  quote,
+  showName,
+  showMeta,
+  highlighted,
   onOpenActions,
   onOpenRef,
   onOpenEphemeral,
+  onOpenPhoto,
+  onOpenQuote,
   onRetry,
 }: {
   message: MessageRow;
   photo?: PhotoRow;
   refItem?: RefRow;
+  refState?: RefState;
   isMine: boolean;
-  color: string;
+  tone: Tone;
   seen?: boolean;
   status?: "sending" | "failed";
   pendingKind?: "photo" | "voice" | "video";
+  pendingPreview?: string;
+  quote?: Quote | null;
+  /** Premier message d'une série de l'autre personne : on affiche son prénom. */
+  showName?: boolean;
+  /** Dernier message d'une série : on affiche l'heure et l'accusé de lecture. */
+  showMeta?: boolean;
+  highlighted?: boolean;
   onOpenActions: () => void;
   onOpenRef: (ref: RefRow) => void;
   onOpenEphemeral: (message: MessageRow) => void;
+  onOpenPhoto: (photo: PhotoRow, url: string) => void;
+  onOpenQuote: (id: string) => void;
   onRetry?: () => void;
 }) {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [refMediaUrl, setRefMediaUrl] = useState<string | null>(null);
-  const classes = COLOR_CLASSES[color] ?? COLOR_CLASSES.blush;
   const ephemeralSeen = message.ephemeral_type ? !!message.ephemeral_viewed_at : seen;
 
   useEffect(() => {
@@ -61,174 +123,142 @@ export default function MessageBubble({
     };
   }, [refItem]);
 
-  const time = new Date(message.created_at).toLocaleTimeString("fr-FR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  const overlayBg = isMine ? "bg-white/20" : "bg-black/5";
+  const refIsMedia = !!(refItem?.media_path && !refItem.link);
+  const wide = !!(photo || message.photo_id || pendingKind === "photo" || refIsMedia);
+  const interactive = !status;
 
   return (
-    <div className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
-      {!isMine && (
-        <span className="mb-0.5 ml-2 text-xs font-semibold text-blush-400">
-          {message.sender_name}
-        </span>
-      )}
+    <div
+      data-message-id={message.id}
+      className={cn("flex flex-col rounded-2xl", isMine ? "items-end" : "items-start", highlighted && "animate-flash")}
+    >
+      {showName && !isMine && <span className="mb-1 ml-3 mt-1 text-xs font-bold text-muted">{message.sender_name}</span>}
+
       <div
-        className={`max-w-[75%] rounded-3xl px-4 py-2.5 shadow-sm transition-opacity ${
-          isMine
-            ? `${classes.bg} rounded-br-md text-white`
-            : "rounded-bl-md bg-white text-blush-900"
-        } ${status === "sending" ? "opacity-60" : ""} ${
-          status === "failed" ? "ring-2 ring-red-400" : ""
-        }`}
+        tabIndex={interactive ? 0 : -1}
+        onClick={interactive ? onOpenActions : undefined}
+        onKeyDown={(e) => {
+          if (interactive && e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            onOpenActions();
+          }
+        }}
+        className={cn(
+          "relative max-w-[84%] rounded-[22px] px-3.5 py-2.5 text-[15.5px] leading-snug transition-[opacity,transform]",
+          wide && "w-[min(84%,300px)]",
+          interactive && "cursor-pointer active:scale-[0.99]",
+          isMine ? `tone-${tone} bg-tone-bg text-tone-ink` : "bg-surface text-ink shadow-card ring-1 ring-line",
+          showMeta && (isMine ? "rounded-br-[8px]" : "rounded-bl-[8px]"),
+          status === "sending" && "opacity-60",
+          status === "failed" && "ring-2 ring-danger",
+          message.saved && "mb-2",
+        )}
       >
-        {pendingKind === "photo" && (
-          <div className="mb-1 flex h-32 w-40 items-center justify-center rounded-2xl bg-black/10 text-3xl">
-            📷
-          </div>
-        )}
-        {pendingKind === "voice" && (
-          <div className="mb-1 flex items-center gap-2 rounded-2xl bg-black/10 px-3 py-2 text-sm font-semibold">
-            🎤 Message vocal
-          </div>
-        )}
-        {pendingKind === "video" && (
-          <div className="mb-1 flex items-center gap-2 rounded-2xl bg-black/10 px-3 py-2 text-sm font-semibold">
-            🎥 Vidéo éphémère
-          </div>
-        )}
-        {message.ephemeral_type &&
-          (message.ephemeral_viewed_at ? (
-            <div className={`flex items-center gap-2 rounded-2xl p-2 text-sm opacity-70 ${overlayBg}`}>
-              <span className="text-xl">
-                {message.ephemeral_type === "video" ? "🎥" : "📸"}
-              </span>
-              {message.ephemeral_type === "video" ? "Vidéo" : "Photo"} éphémère · Vue
-            </div>
-          ) : isMine ? (
-            <div className={`flex items-center gap-2 rounded-2xl p-2 text-sm opacity-70 ${overlayBg}`}>
-              <span className="text-xl">
-                {message.ephemeral_type === "video" ? "🎥" : "🔥"}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-bold">
-                  {message.ephemeral_type === "video" ? "Vidéo éphémère" : "Photo éphémère"}
-                </span>
-                <span className="block text-xs opacity-70">En attente d&apos;ouverture</span>
-              </span>
-            </div>
-          ) : (
-            message.ephemeral_path && (
-              <button
-                onClick={() => onOpenEphemeral(message)}
-                className={`flex w-full items-center gap-2 rounded-2xl p-2 text-left transition active:scale-[0.98] ${overlayBg}`}
-              >
-                <span className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl ${overlayBg}`}>
-                  {message.ephemeral_type === "video" ? "🎥" : "🔥"}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold">
-                    {message.ephemeral_type === "video" ? "Vidéo éphémère" : "Photo éphémère"}
-                  </span>
-                  <span className="block text-xs opacity-70">Appuyer pour voir</span>
-                </span>
-              </button>
-            )
-          ))}
-        {photo &&
-          (imgUrl ? (
-            <img
-              src={imgUrl}
-              alt=""
-              className="mb-1 max-h-64 w-full rounded-2xl object-cover"
-            />
-          ) : (
-            <div className="mb-1 h-40 w-48 animate-pulse rounded-2xl bg-black/10" />
-          ))}
-        {message.ref_id &&
-          (refItem ? (
-            refItem.media_path && !refItem.link ? (
-              refItem.media_type === "video" ? (
-                refMediaUrl && (
-                  <video
-                    src={refMediaUrl}
-                    controls
-                    className="mb-1 max-h-64 w-full rounded-2xl object-cover"
-                  />
-                )
-              ) : refMediaUrl ? (
-                <img
-                  src={refMediaUrl}
-                  alt=""
-                  className="mb-1 max-h-64 w-full rounded-2xl object-cover"
-                />
-              ) : (
-                <div className="mb-1 h-40 w-full animate-pulse rounded-2xl bg-black/10" />
-              )
-            ) : (
-              <button
-                onClick={() => onOpenRef(refItem)}
-                className={`flex w-full items-center gap-2 rounded-2xl p-2 text-left transition active:scale-[0.98] ${overlayBg}`}
-              >
-                <span className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl ${overlayBg}`}>
-                  🔗
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold">{refItem.title}</span>
-                  <span className="block text-xs opacity-70">Ouvrir la ref</span>
-                </span>
-              </button>
-            )
-          ) : (
-            <div className={`flex items-center gap-2 rounded-2xl p-2 text-sm opacity-70 ${overlayBg}`}>
-              🔖 Ref supprimée
-            </div>
-          ))}
-        {message.audio_path && (
-          <VoiceMessage path={message.audio_path} tone={isMine ? "mine" : "theirs"} />
-        )}
-        {message.content && (
-          <p className="whitespace-pre-wrap break-words">{message.content}</p>
-        )}
-      </div>
-      <div className="mt-0.5 flex items-center gap-1.5 px-2">
-        {status === "sending" && (
-          <span className="text-[10px] text-blush-300">Envoi…</span>
-        )}
-        {status === "failed" && (
+        {quote && (
           <button
-            onClick={onRetry}
-            className="flex items-center gap-1 text-[11px] font-semibold text-red-500 transition active:scale-95"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenQuote(quote.id);
+            }}
+            className="mb-2 block w-full rounded-xl border-l-[3px] border-primary bg-ink/[0.07] px-2.5 py-1.5 text-left transition active:scale-[0.98]"
+            aria-label={`Réponse à ${quote.sender} : ${quote.preview}. Aller au message.`}
           >
-            ⚠️ Non envoyé — Réessayer
+            <span className="block truncate text-xs font-bold text-primary-ink">{quote.sender}</span>
+            <span className="line-clamp-2 block text-[13px] leading-snug opacity-80">{quote.preview}</span>
           </button>
         )}
-        {!status && (
-          <>
-            {message.saved && <span className="text-[11px]">🦆</span>}
-            <span className="text-[10px] text-blush-300">{time}</span>
-            {isMine && (
-              <span
-                className={`text-[11px] leading-none ${
-                  ephemeralSeen ? "text-blush-500" : "text-blush-200"
-                }`}
-                aria-label={ephemeralSeen ? "Vu" : "Envoyé"}
-              >
-                {ephemeralSeen ? "✓✓" : "✓"}
-              </span>
-            )}
-            <button
-              onClick={onOpenActions}
-              className="flex h-5 w-5 items-center justify-center text-blush-200 transition hover:text-blush-400 active:scale-90"
-              aria-label="Actions du message"
-            >
-              ⋯
+
+        {pendingKind === "photo" &&
+          (pendingPreview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={pendingPreview} alt="" className="mb-1.5 h-56 w-full rounded-2xl object-cover" />
+          ) : (
+            <div className="mb-1.5 flex h-56 w-full items-center justify-center rounded-2xl bg-ink/10">
+              <Icon name="camera" size={28} />
+            </div>
+          ))}
+        {pendingKind === "voice" && <AttachmentRow icon="mic" title="Message vocal" hint="Envoi en cours" muted />}
+        {pendingKind === "video" && <AttachmentRow icon="video" title="Vidéo éphémère" hint="Envoi en cours" muted />}
+
+        {message.ephemeral_type &&
+          (message.ephemeral_viewed_at ? (
+            <AttachmentRow icon={message.ephemeral_type === "video" ? "video" : "flame"} title={`${message.ephemeral_type === "video" ? "Vidéo" : "Photo"} éphémère`} hint="Vue" muted />
+          ) : isMine ? (
+            !pendingKind && <AttachmentRow icon={message.ephemeral_type === "video" ? "video" : "flame"} title={`${message.ephemeral_type === "video" ? "Vidéo" : "Photo"} éphémère`} hint="En attente d'ouverture" />
+          ) : (
+            message.ephemeral_path && (
+              <AttachmentRow
+                icon={message.ephemeral_type === "video" ? "video" : "flame"}
+                title={`${message.ephemeral_type === "video" ? "Vidéo" : "Photo"} éphémère`}
+                hint="Appuyer pour voir"
+                onClick={() => onOpenEphemeral(message)}
+              />
+            )
+          ))}
+
+        {message.photo_id && !photo && <div className="mb-1.5 h-56 w-full animate-pulse rounded-2xl bg-ink/10" />}
+        {photo &&
+          (imgUrl ? (
+            <button type="button" onClick={(e) => { e.stopPropagation(); onOpenPhoto(photo, imgUrl); }} className="mb-1.5 block w-full overflow-hidden rounded-2xl" aria-label="Agrandir la photo">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imgUrl} alt="" className="h-56 w-full object-cover" />
             </button>
-          </>
+          ) : (
+            <div className="mb-1.5 h-56 w-full animate-pulse rounded-2xl bg-ink/10" />
+          ))}
+
+        {message.ref_id &&
+          (refItem ? (
+            refIsMedia ? (
+              refMediaUrl ? (
+                refItem.media_type === "video" ? (
+                  <video src={refMediaUrl} controls playsInline onClick={(e) => e.stopPropagation()} className="mb-1.5 h-56 w-full rounded-2xl object-cover" />
+                ) : (
+                  <button type="button" onClick={(e) => { e.stopPropagation(); onOpenRef(refItem); }} className="mb-1.5 block w-full overflow-hidden rounded-2xl" aria-label={`Ouvrir la réf ${refItem.title}`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={refMediaUrl} alt="" className="h-56 w-full object-cover" />
+                  </button>
+                )
+              ) : (
+                <div className="mb-1.5 h-56 w-full animate-pulse rounded-2xl bg-ink/10" />
+              )
+            ) : (
+              <AttachmentRow icon="link" title={refItem.title} hint="Ouvrir la réf" onClick={() => onOpenRef(refItem)} />
+            )
+          ) : refState === "deleted" ? (
+            <AttachmentRow icon="bookmark" title="Réf supprimée" hint="Elle n'est plus dans l'armoire" muted />
+          ) : (
+            <div className="h-14 w-full min-w-[200px] animate-pulse rounded-2xl bg-ink/10" />
+          ))}
+
+        {message.audio_path && <VoiceMessage path={message.audio_path} />}
+
+        {message.content && <p className="whitespace-pre-wrap break-words">{message.content}</p>}
+
+        {message.saved && (
+          <span aria-label="Dans les canards" role="img" className={cn("absolute -bottom-2.5 rounded-full bg-surface px-1.5 py-0.5 text-xs leading-none shadow-card ring-1 ring-line", isMine ? "right-3" : "left-3")}>
+            🦆
+          </span>
         )}
       </div>
+
+      {(status || showMeta) && (
+        <div className={cn("mt-1 flex items-center gap-1.5 px-2 text-[11px] text-subtle", message.saved && "mt-1.5")}>
+          {status === "sending" && <span>Envoi…</span>}
+          {status === "failed" && (
+            <button type="button" onClick={onRetry} className="font-semibold text-danger transition active:scale-95">
+              Non envoyé · Réessayer
+            </button>
+          )}
+          {!status && (
+            <>
+              <time dateTime={message.created_at}>{timeLabel(message.created_at)}</time>
+              {isMine && <Ticks seen={!!ephemeralSeen} />}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Field, inputClass } from "@/components/ui/Field";
+import { Icon } from "@/components/ui/Icon";
+import { Sheet } from "@/components/ui/Sheet";
 import type { RefRow } from "@/lib/types";
 
 export type RefFormValues = {
@@ -37,95 +41,60 @@ export default function RefModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-blush-900/40 backdrop-blur-sm sm:items-center">
-      <form
-        onSubmit={handleSubmit}
-        className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-t-3xl bg-white p-6 sm:rounded-3xl"
-      >
-        <h2 className="mb-4 text-lg font-extrabold text-blush-700">
-          {initial ? "Modifier la ref" : "Nouvelle ref"}
-        </h2>
+    <Sheet open onClose={onClose} title={initial ? "Modifier la réf" : "Nouvelle réf"}>
+      <form onSubmit={handleSubmit} className="space-y-4 px-3 pb-1">
+        <Field label="Titre">
+          <input autoFocus={!initial} value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} placeholder="Nom de la réf" required />
+        </Field>
 
-        <label className="mb-3 block text-sm font-semibold text-blush-500">
-          Titre
-          <input
-            autoFocus
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="mt-1 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none transition focus:border-blush-300 focus-visible:ring-2 focus-visible:ring-blush-200"
-            placeholder="Nom de la ref"
-          />
-        </label>
+        <Field label="Lien (facultatif)">
+          <input value={link} onChange={(e) => setLink(e.target.value)} type="url" inputMode="url" className={inputClass} placeholder="https://…" />
+        </Field>
 
-        <label className="mb-3 block text-sm font-semibold text-blush-500">
-          Lien (optionnel)
-          <input
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            type="url"
-            className="mt-1 w-full rounded-xl border-2 border-blush-100 px-3 py-2.5 outline-none transition focus:border-blush-300 focus-visible:ring-2 focus-visible:ring-blush-200"
-            placeholder="https://…"
-          />
-        </label>
-
-        <div className="mb-5">
-          <span className="mb-1 block text-sm font-semibold text-blush-500">
-            Photo ou vidéo (optionnel)
-          </span>
+        <div>
+          <span className="mb-1.5 block text-sm font-semibold text-muted">Photo ou vidéo (facultatif)</span>
 
           {hasExistingMedia && (
-            <div className="mb-2 flex items-center gap-3 rounded-xl bg-blush-50 p-2">
+            <div className="mb-2 flex items-center gap-3 rounded-2xl bg-surface-2 p-2 ring-1 ring-line">
               {initial?.media_type === "image" && existingMediaUrl ? (
-                <img
-                  src={existingMediaUrl}
-                  alt=""
-                  className="h-14 w-14 rounded-lg object-cover"
-                />
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={existingMediaUrl} alt="" className="size-14 rounded-xl object-cover" />
               ) : (
-                <span className="flex h-14 w-14 items-center justify-center rounded-lg bg-blush-100 text-2xl">
-                  🎬
+                <span className="flex size-14 items-center justify-center rounded-xl bg-tint text-tint-ink">
+                  <Icon name="video" size={24} />
                 </span>
               )}
-              <span className="flex-1 text-xs text-blush-400">Média actuel</span>
-              <button
-                type="button"
-                onClick={() => setRemoveMedia(true)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-blush-300 transition hover:text-red-500 active:scale-90"
-                aria-label="Retirer le média"
-              >
-                ✕
+              <span className="flex-1 text-sm text-muted">Média actuel</span>
+              <button type="button" onClick={() => setRemoveMedia(true)} className="flex size-11 shrink-0 items-center justify-center rounded-full text-subtle transition hover:text-danger active:scale-90" aria-label="Retirer le média">
+                <Icon name="x" size={20} />
               </button>
             </div>
           )}
 
-          <input
-            type="file"
-            accept="image/*,video/*"
-            onChange={(e) => {
-              setFile(e.target.files?.[0] ?? null);
-              setRemoveMedia(false);
-            }}
-            className="w-full text-sm text-blush-600"
-          />
+          <label className="flex h-12 cursor-pointer items-center gap-3 rounded-2xl bg-surface-2 px-4 ring-1 ring-line transition active:scale-[0.99]">
+            <Icon name="upload" size={20} className="shrink-0 text-primary-ink" />
+            <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-primary-ink">{file ? file.name : hasExistingMedia ? "Remplacer le média" : "Choisir un fichier"}</span>
+            <input
+              type="file"
+              accept="image/*,video/*"
+              className="sr-only"
+              onChange={(e) => {
+                setFile(e.target.files?.[0] ?? null);
+                setRemoveMedia(false);
+              }}
+            />
+          </label>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 rounded-xl bg-blush-50 py-3 font-bold text-blush-500 transition active:scale-[0.98]"
-          >
+        <div className="grid grid-cols-2 gap-3 pt-1">
+          <Button variant="soft" size="lg" onClick={onClose}>
             Annuler
-          </button>
-          <button
-            type="submit"
-            disabled={!title.trim() || saving}
-            className="flex-1 rounded-xl bg-blush-500 py-3 font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
-          >
-            {saving ? "…" : initial ? "Enregistrer" : "Ajouter"}
-          </button>
+          </Button>
+          <Button type="submit" size="lg" disabled={!title.trim() || saving}>
+            {saving ? "Envoi…" : initial ? "Enregistrer" : "Ajouter"}
+          </Button>
         </div>
       </form>
-    </div>
+    </Sheet>
   );
 }

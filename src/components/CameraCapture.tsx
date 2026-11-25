@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "@/components/ui/Icon";
 
 export type CapturedMedia = {
   blob: Blob;
@@ -229,20 +230,20 @@ export default function CameraCapture({
             <button
               onClick={handleClose}
               aria-label="Fermer"
-              className="absolute left-4 top-[calc(1rem+env(safe-area-inset-top))] flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-xl text-white transition active:scale-90"
+              className="absolute left-4 top-[calc(1rem+env(safe-area-inset-top))] flex size-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition active:scale-90"
             >
-              ✕
+              <Icon name="x" size={20} />
             </button>
             <button
               onClick={flipCamera}
               aria-label="Changer de caméra"
-              className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-xl text-white transition active:scale-90"
+              className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] flex size-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition active:scale-90"
             >
-              🔄
+              <Icon name="refresh" size={20} />
             </button>
             {recording && (
               <div className="absolute left-1/2 top-[calc(1rem+env(safe-area-inset-top))] flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/50 px-3 py-1.5 text-sm font-semibold text-white">
-                <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
+                <span className="size-2.5 animate-pulse rounded-full bg-danger" />
                 {Math.floor(recordSeconds / 60)}:{String(recordSeconds % 60).padStart(2, "0")}
               </div>
             )}
@@ -259,7 +260,7 @@ export default function CameraCapture({
               onPointerLeave={handlePressEnd}
               aria-label="Prendre une photo, maintenir pour filmer"
               className={`flex h-20 w-20 items-center justify-center rounded-full border-4 border-white transition active:scale-95 ${
-                recording ? "bg-red-500" : "bg-white/30"
+                recording ? "bg-danger" : "bg-white/30"
               }`}
             >
               <span
@@ -291,9 +292,9 @@ export default function CameraCapture({
             <button
               onClick={retake}
               aria-label="Reprendre"
-              className="absolute left-4 top-[calc(1rem+env(safe-area-inset-top))] flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-xl text-white transition active:scale-90"
+              className="absolute left-4 top-[calc(1rem+env(safe-area-inset-top))] flex size-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition active:scale-90"
             >
-              ✕
+              <Icon name="x" size={20} />
             </button>
           </div>
           <div className="flex flex-col gap-3 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
@@ -301,31 +302,32 @@ export default function CameraCapture({
               <div className="flex items-center justify-center gap-1 rounded-full bg-white/10 p-1">
                 <button
                   onClick={() => setEphemeral(false)}
-                  className={`flex-1 rounded-full py-2.5 text-sm font-bold transition active:scale-95 ${
-                    !ephemeral ? "bg-white text-blush-700" : "text-white"
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-2.5 text-sm font-bold transition active:scale-95 ${
+                    !ephemeral ? "bg-white text-ink" : "text-white"
                   }`}
                 >
-                  🖼️ Permanente
+                  <Icon name="photo" size={16} /> Permanente
                 </button>
                 <button
                   onClick={() => setEphemeral(true)}
-                  className={`flex-1 rounded-full py-2.5 text-sm font-bold transition active:scale-95 ${
-                    ephemeral ? "bg-white text-blush-700" : "text-white"
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-2.5 text-sm font-bold transition active:scale-95 ${
+                    ephemeral ? "bg-white text-ink" : "text-white"
                   }`}
                 >
-                  🔥 Éphémère
+                  <Icon name="flame" size={16} /> Éphémère
                 </button>
               </div>
             ) : (
-              <p className="text-center text-xs text-white/70">
-                🔥 Les vidéos sont toujours éphémères — elles disparaissent après visionnage
+              <p className="flex items-center justify-center gap-1.5 text-center text-xs text-white/70">
+                <Icon name="flame" size={14} /> Les vidéos sont toujours éphémères : elles disparaissent après visionnage
               </p>
             )}
             <button
               onClick={handleSend}
-              className="rounded-full bg-blush-500 py-3.5 text-center font-bold text-white transition active:scale-[0.98]"
+              className="flex items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-center font-display text-[17px] font-semibold text-primary-on shadow-press transition active:scale-[0.98]"
             >
-              Envoyer{ephemeral || captured.kind === "video" ? " 🔥" : ""}
+              Envoyer
+              {(ephemeral || captured.kind === "video") && <Icon name="flame" size={18} />}
             </button>
           </div>
         </>

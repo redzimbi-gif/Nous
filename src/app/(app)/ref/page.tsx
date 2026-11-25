@@ -7,7 +7,11 @@ import { useIdentity } from "@/lib/identity";
 import type { RefRow } from "@/lib/types";
 import RefModal, { type RefFormValues } from "@/components/RefModal";
 import RefDetail from "@/components/RefDetail";
-import PillButton from "@/components/PillButton";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
+import { PageHeading } from "@/components/ui/PageHeading";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function RefPage() {
   const { name } = useIdentity();
@@ -17,6 +21,7 @@ export default function RefPage() {
   const [editing, setEditing] = useState<RefRow | null>(null);
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<RefRow | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   async function load() {
     const { data } = await supabase
@@ -25,6 +30,7 @@ export default function RefPage() {
       .order("created_at", { ascending: false });
     if (!data) return;
     setItems(data);
+    setLoaded(true);
     const paths = data.map((r) => r.media_path).filter(Boolean) as string[];
     if (paths.length) {
       const map = await getCachedSignedUrls(REFS_BUCKET, paths, LONG_TTL_SECONDS);
@@ -107,54 +113,55 @@ export default function RefPage() {
     load();
   }
 
-  return (
-    <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
-        <h1 className="text-lg font-extrabold text-blush-700">🖼️ Armoire à ref</h1>
-        <PillButton
-          onClick={() => {
-            setEditing(null);
-            setModalOpen(true);
-          }}
-        >
-          + Ajouter
-        </PillButton>
-      </header>
+  function openNew() {
+    setEditing(null);
+    setModalOpen(true);
+  }
 
-      <div className="flex-1 overflow-y-auto p-3">
-        {items.length === 0 ? (
-          <p className="mt-20 text-center text-sm text-blush-300">
-            Aucune ref pour l&apos;instant — ajoute la première 👆
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {items.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setSelected(item)}
-                className="overflow-hidden rounded-2xl bg-white text-left shadow-sm transition active:scale-[0.97]"
-              >
-                <div className="flex aspect-square items-center justify-center bg-blush-50">
-                  {item.media_path && item.media_type === "image" && urls[item.media_path] && (
-                    <img
-                      src={urls[item.media_path]}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
+  return (
+    <div className="h-full overflow-y-auto px-5 pb-6">
+      <PageHeading
+        title="Armoire à réfs"
+        subtitle={loaded && items.length > 0 ? `${items.length} réf${items.length > 1 ? "s" : ""} à garder sous la main` : "Vos idées, liens et inspirations"}
+        action={
+          <Button onClick={openNew} className="shrink-0">
+            <Icon name="plus" size={18} strokeWidth={2.2} />
+            Ajouter
+          </Button>
+        }
+      />
+
+      {!loaded ? (
+        <div className="grid grid-cols-2 gap-3" aria-hidden="true">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="aspect-[4/5] rounded-3xl" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <EmptyState icon="bookmark" title="L'armoire est vide" action={<Button onClick={openNew}>Ajouter la première réf</Button>}>
+          Un resto, une idée de week-end, un lien à ne pas perdre : rangez-le ici, puis envoyez-le dans le chat quand vous voulez.
+        </EmptyState>
+      ) : (
+        <ul className="grid grid-cols-2 gap-3">
+          {items.map((item) => (
+            <li key={item.id}>
+              <button type="button" onClick={() => setSelected(item)} className="block w-full overflow-hidden rounded-3xl bg-surface text-left shadow-card ring-1 ring-line transition active:scale-[0.97]">
+                <div className="flex aspect-square items-center justify-center bg-tint text-tint-ink">
+                  {item.media_path && item.media_type === "image" && urls[item.media_path] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={urls[item.media_path]} alt="" className="h-full w-full object-cover" />
+                  ) : item.media_path && item.media_type === "video" ? (
+                    <Icon name="video" size={34} />
+                  ) : (
+                    <Icon name={item.media_path ? "photo" : "link"} size={34} />
                   )}
-                  {item.media_path && item.media_type === "video" && (
-                    <span className="text-4xl">🎬</span>
-                  )}
-                  {!item.media_path && <span className="text-4xl">🔗</span>}
                 </div>
-                <div className="p-2">
-                  <p className="truncate text-sm font-semibold text-blush-800">{item.title}</p>
-                </div>
+                <p className="truncate px-3.5 py-3 font-display text-[15px] font-semibold">{item.title}</p>
               </button>
-            ))}
-          </div>
-        )}
-      </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {modalOpen && (
         <RefModal

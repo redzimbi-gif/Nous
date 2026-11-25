@@ -15,6 +15,7 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!login|api/login|_next/static|_next/image|favicon.ico|manifest.json).*)",
+    // Les icônes de l'appli (installation, notifications) doivent rester lisibles sans être connecté.
+    "/((?!login|api/login|_next/static|_next/image|favicon.ico|manifest.json|icon.svg|apple-icon.png|icon-192.png|icon-512.png|icon-maskable-512.png).*)",
   ],
 };

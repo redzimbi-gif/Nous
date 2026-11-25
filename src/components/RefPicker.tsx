@@ -1,96 +1,70 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase, REFS_BUCKET } from "@/lib/supabase";
+import { Icon } from "@/components/ui/Icon";
+import { Sheet } from "@/components/ui/Sheet";
 import { getCachedSignedUrls, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
+import { REFS_BUCKET, supabase } from "@/lib/supabase";
 import type { RefRow } from "@/lib/types";
 
-export default function RefPicker({
-  onClose,
-  onSelect,
-}: {
-  onClose: () => void;
-  onSelect: (ref: RefRow) => void;
-}) {
+function RefGrid({ onSelect }: { onSelect: (ref: RefRow) => void }) {
   const [items, setItems] = useState<RefRow[]>([]);
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
     supabase
       .from("refs")
       .select("*")
       .order("created_at", { ascending: false })
       .then(async ({ data }) => {
+        if (!active) return;
         if (!data) {
           setLoading(false);
           return;
         }
         setItems(data);
+        setLoading(false);
         const paths = data.map((r) => r.media_path).filter(Boolean) as string[];
         if (paths.length) {
           const map = await getCachedSignedUrls(REFS_BUCKET, paths, LONG_TTL_SECONDS);
-          setUrls(map);
+          if (active) setUrls(map);
         }
-        setLoading(false);
       });
+    return () => {
+      active = false;
+    };
   }, []);
 
+  if (loading) return <p className="py-10 text-center text-sm text-muted">Chargement…</p>;
+  if (items.length === 0) return <p className="py-10 text-center text-sm text-muted">Aucune réf pour l&apos;instant. Ajoute-en depuis l&apos;armoire.</p>;
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-blush-900/40 backdrop-blur-sm sm:items-center"
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[80vh] w-full max-w-sm overflow-y-auto rounded-t-3xl bg-white p-4 sm:rounded-3xl"
-      >
-        <h2 className="mb-3 text-lg font-extrabold text-blush-700">
-          🔖 Choisis une ref à envoyer
-        </h2>
-
-        {loading && <p className="py-6 text-center text-sm text-blush-300">Chargement…</p>}
-
-        {!loading && items.length === 0 && (
-          <p className="py-6 text-center text-sm text-blush-300">
-            Aucune ref pour l&apos;instant.
-          </p>
-        )}
-
-        <div className="grid grid-cols-3 gap-2">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onSelect(item)}
-              className="overflow-hidden rounded-2xl bg-blush-50 text-left transition active:scale-95"
-            >
-              <div className="flex aspect-square items-center justify-center bg-blush-100">
-                {item.media_path && item.media_type === "image" && urls[item.media_path] && (
-                  <img
-                    src={urls[item.media_path]}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                )}
-                {item.media_path && item.media_type === "video" && (
-                  <span className="text-2xl">🎬</span>
-                )}
-                {!item.media_path && <span className="text-2xl">🔗</span>}
-              </div>
-              <p className="truncate p-1.5 text-xs font-semibold text-blush-800">
-                {item.title}
-              </p>
-            </button>
-          ))}
-        </div>
-
-        <button
-          onClick={onClose}
-          className="mt-4 w-full rounded-xl bg-blush-50 py-3 font-bold text-blush-500 transition active:scale-[0.98]"
-        >
-          Annuler
+    <div className="grid grid-cols-3 gap-2 px-2 pb-2">
+      {items.map((item) => (
+        <button key={item.id} type="button" onClick={() => onSelect(item)} className="overflow-hidden rounded-2xl bg-surface-2 text-left ring-1 ring-line transition active:scale-95">
+          <div className="flex aspect-square items-center justify-center bg-tint text-tint-ink">
+            {item.media_path && item.media_type === "image" && urls[item.media_path] ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={urls[item.media_path]} alt="" className="h-full w-full object-cover" />
+            ) : item.media_path && item.media_type === "video" ? (
+              <Icon name="video" size={26} />
+            ) : (
+              <Icon name={item.media_path ? "photo" : "link"} size={26} />
+            )}
+          </div>
+          <p className="truncate px-2 py-1.5 text-xs font-semibold">{item.title}</p>
         </button>
-      </div>
+      ))}
     </div>
+  );
+}
+
+export default function RefPicker({ open, onClose, onSelect }: { open: boolean; onClose: () => void; onSelect: (ref: RefRow) => void }) {
+  return (
+    <Sheet open={open} onClose={onClose} title="Envoyer une réf">
+      {open && <RefGrid onSelect={onSelect} />}
+    </Sheet>
   );
 }

@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import type { TicTacToeGame } from "@/lib/types";
 import { calculateWinner, isBoardFull, EMPTY_BOARD } from "@/lib/tictactoe";
-import GameReactions from "@/components/GameReactions";
+import GameHeader from "@/components/GameHeader";
 import { sendNotification } from "@/lib/notify";
 
 export default function MorpionPage() {
@@ -124,27 +123,11 @@ export default function MorpionPage() {
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
-      <header className="flex items-center justify-between border-b border-blush-100 bg-white px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Link href="/jeux" className="text-xl text-blush-400" aria-label="Retour">
-            ←
-          </Link>
-          <h1 className="text-lg font-extrabold text-blush-700">✕⭕ Morpion</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <GameReactions gameKey="tictactoe" />
-          <button
-            onClick={startNewGame}
-            className="rounded-full bg-blush-500 px-4 py-1.5 text-sm font-bold text-white"
-          >
-            Nouvelle partie
-          </button>
-        </div>
-      </header>
+      <GameHeader title="Morpion" gameKey="tictactoe" onNewGame={startNewGame} />
 
       <div className="flex flex-1 flex-col items-center gap-4 px-4 py-6">
         {Object.keys(score).length > 0 && (
-          <div className="flex gap-4 text-sm font-semibold text-blush-500">
+          <div className="flex gap-4 text-sm font-semibold text-primary-ink">
             {Object.entries(score).map(([n, wins]) => (
               <span key={n}>
                 {n} : {wins}
@@ -153,17 +136,17 @@ export default function MorpionPage() {
           </div>
         )}
 
-        {game === undefined && <p className="text-sm text-blush-300">Chargement…</p>}
+        {game === undefined && <p className="text-sm text-muted">Chargement…</p>}
 
         {game === null && (
-          <p className="mt-10 text-center text-sm text-blush-300">
+          <p className="mt-10 text-center text-sm text-muted">
             Aucune partie en cours — lance-en une avec le bouton en haut 👆
           </p>
         )}
 
         {game && (
           <>
-            <p className="text-center font-semibold text-blush-700">
+            <p className="text-center font-semibold text-ink">
               {game.winner === "draw" && "Match nul ! 🤝"}
               {game.winner === "X" && `${game.x_name} a gagné ! 🎉`}
               {game.winner === "O" && `${game.o_name} a gagné ! 🎉`}
@@ -178,15 +161,15 @@ export default function MorpionPage() {
                   key={i}
                   onClick={() => handleCellClick(i)}
                   disabled={!isMyTurn || !!cell || !!game.winner}
-                  className="flex aspect-square items-center justify-center rounded-2xl bg-white text-4xl font-bold shadow-sm disabled:opacity-100"
+                  className="flex aspect-square items-center justify-center rounded-2xl bg-surface text-4xl font-bold shadow-card disabled:opacity-100"
                 >
-                  {cell === "X" && <span className="text-blush-500">✕</span>}
+                  {cell === "X" && <span className="text-primary-ink">✕</span>}
                   {cell === "O" && <span className="text-sky-500">○</span>}
                 </button>
               ))}
             </div>
 
-            <p className="text-xs text-blush-300">
+            <p className="text-xs text-muted">
               Toi : {myRole ?? "spectateur"} · {game.x_name} joue ✕
               {game.o_name ? ` · ${game.o_name} joue ○` : ""}
             </p>

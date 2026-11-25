@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/lib/identity";
 import PillButton from "@/components/PillButton";
+import { Card } from "@/components/ui/Card";
+import { Icon } from "@/components/ui/Icon";
 import Toggle from "@/components/Toggle";
 
 type Status =
@@ -110,26 +112,26 @@ export default function NotificationsCard() {
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm">
+    <Card className="p-5">
       <div className="mb-1 flex items-center gap-3">
-        <span className="text-3xl">🔔</span>
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-tint text-tint-ink">
+          <Icon name="bell" />
+        </span>
         <div>
-          <p className="font-bold text-blush-800">Notifications</p>
-          <p className="text-xs text-blush-400">Être prévenu·e des nouveaux messages</p>
+          <p className="font-display text-lg font-semibold">Notifications</p>
+          <p className="text-sm text-muted">Être prévenu·e des nouveaux messages</p>
         </div>
       </div>
 
-      <div className="mt-3">
-        {status === "checking" && <p className="text-sm text-blush-300">Vérification…</p>}
+      <div className="mt-4">
+        {status === "checking" && <p className="text-sm text-muted">Vérification…</p>}
 
         {status === "unsupported" && (
-          <p className="text-sm text-blush-400">
-            Ton navigateur ne supporte pas les notifications.
-          </p>
+          <p className="text-sm leading-relaxed text-muted">Ton navigateur ne supporte pas les notifications.</p>
         )}
 
         {status === "ios-needs-install" && (
-          <p className="text-sm text-blush-400">
+          <p className="text-sm leading-relaxed text-muted">
             Sur iPhone, ajoute d&apos;abord Nous à ton écran d&apos;accueil (bouton Partager ⬆️
             → &quot;Sur l&apos;écran d&apos;accueil&quot;), puis ouvre l&apos;app depuis
             l&apos;icône et reviens ici.
@@ -137,7 +139,7 @@ export default function NotificationsCard() {
         )}
 
         {status === "denied" && (
-          <p className="text-sm text-blush-400">
+          <p className="text-sm leading-relaxed text-muted">
             Les notifications sont bloquées pour ce site. Autorise-les dans les réglages de
             ton navigateur pour les activer.
           </p>
@@ -151,11 +153,11 @@ export default function NotificationsCard() {
 
         {status === "subscribed" && (
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-blush-600">Activées</span>
+            <span className="font-semibold text-ok-ink">Activées</span>
             <Toggle checked onChange={disable} disabled={busy} label="Désactiver les notifications" />
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { VOICES_BUCKET } from "@/lib/supabase";
+import { Icon } from "@/components/ui/Icon";
 import { getCachedSignedUrl, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
+import { VOICES_BUCKET } from "@/lib/supabase";
 
 let activeAudio: HTMLAudioElement | null = null;
 
-export default function VoiceMessage({
-  path,
-  tone,
-}: {
-  path: string;
-  tone: "mine" | "theirs";
-}) {
+function formatTime(seconds: number) {
+  const total = Math.floor(seconds);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
+export default function VoiceMessage({ path }: { path: string }) {
   const [url, setUrl] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -55,22 +55,16 @@ export default function VoiceMessage({
     setCurrentTime(t);
   }
 
-  function formatTime(seconds: number) {
-    const total = Math.floor(seconds);
-    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
-  }
-
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const isMine = tone === "mine";
 
   return (
-    <div className="flex min-w-[190px] items-center gap-2 py-0.5">
+    <div className="flex min-w-[210px] items-center gap-3 py-0.5" onClick={(e) => e.stopPropagation()}>
       {url && (
         <audio
           ref={audioRef}
           src={url}
           preload="metadata"
-          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
+          onLoadedMetadata={(e) => setDuration(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
           onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
@@ -81,24 +75,16 @@ export default function VoiceMessage({
         />
       )}
       <button
+        type="button"
         onClick={toggle}
         disabled={!url}
         aria-label={playing ? "Mettre en pause" : "Écouter"}
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm transition active:scale-90 disabled:opacity-50 ${
-          isMine ? "bg-white/20" : "bg-blush-50"
-        }`}
+        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-on shadow-press transition active:scale-90 disabled:opacity-50"
       >
-        {playing ? "⏸" : "▶️"}
+        <Icon name={playing ? "pause" : "play"} size={17} />
       </button>
-      <div
-        className={`relative h-1.5 flex-1 overflow-hidden rounded-full ${
-          isMine ? "bg-white/30" : "bg-blush-100"
-        }`}
-      >
-        <div
-          className={`h-full rounded-full ${isMine ? "bg-white" : "bg-blush-500"}`}
-          style={{ width: `${progress}%` }}
-        />
+      <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-ink/15">
+        <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
         <input
           type="range"
           min={0}
@@ -111,9 +97,7 @@ export default function VoiceMessage({
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
         />
       </div>
-      <span className="shrink-0 text-[11px] tabular-nums opacity-80">
-        {formatTime(currentTime || duration)}
-      </span>
+      <span className="w-9 shrink-0 text-right text-[12px] font-semibold tabular-nums opacity-80">{formatTime(currentTime || duration)}</span>
     </div>
   );
 }

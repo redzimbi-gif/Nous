@@ -1,6 +1,9 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { Logo } from "@/components/Logo";
+import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 
 type Identity = { name: string; color: string };
 
@@ -10,14 +13,6 @@ const NAME_KEY = "nous_display_name";
 const COLOR_KEY = "nous_display_color";
 
 export const COLORS = ["blush", "sky", "mint", "amber", "violet"] as const;
-
-export const COLOR_CLASSES: Record<string, { bg: string; ring: string }> = {
-  blush: { bg: "bg-blush-500", ring: "ring-blush-500" },
-  sky: { bg: "bg-sky-400", ring: "ring-sky-400" },
-  mint: { bg: "bg-emerald-400", ring: "ring-emerald-400" },
-  amber: { bg: "bg-amber-400", ring: "ring-amber-400" },
-  violet: { bg: "bg-violet-400", ring: "ring-violet-400" },
-};
 
 export function useIdentity(): Identity {
   const ctx = useContext(IdentityContext);
@@ -50,6 +45,14 @@ export function IdentityProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+const SWATCH: Record<string, string> = {
+  blush: "tone-rose",
+  sky: "tone-sky",
+  mint: "tone-mint",
+  amber: "tone-sun",
+  violet: "tone-lilac",
+};
+
 function NamePrompt({ onSave }: { onSave: (name: string, color: string) => void }) {
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>("blush");
@@ -61,49 +64,31 @@ function NamePrompt({ onSave }: { onSave: (name: string, color: string) => void 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-blush-900/40 px-6 backdrop-blur-sm">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-xs rounded-3xl bg-white p-6 text-center shadow-xl"
-      >
-        <div className="mb-3 text-3xl">👋</div>
-        <h2 className="mb-1 text-lg font-bold text-blush-700">
-          Comment tu t&apos;appelles ?
-        </h2>
-        <p className="mb-4 text-sm text-blush-400">
-          Pour savoir qui a écrit quoi
-        </p>
+    <div className="page-glow fixed inset-0 z-50 flex items-center justify-center bg-bg px-6">
+      <form onSubmit={handleSubmit} className="w-full max-w-sm animate-rise rounded-4xl bg-surface p-7 text-center shadow-float ring-1 ring-line">
+        <Logo className="mb-5 justify-center" />
+        <h2 className="font-display text-2xl font-bold tracking-tight">Comment tu t&apos;appelles ?</h2>
+        <p className="mb-5 mt-1 text-[15px] text-muted">Pour savoir qui a écrit quoi.</p>
         <input
           autoFocus
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Ton prénom"
-          className="mb-4 w-full rounded-xl border-2 border-blush-200 px-4 py-3 text-center outline-none transition focus:border-blush-400 focus-visible:ring-2 focus-visible:ring-blush-200"
+          className="mb-5 h-14 w-full rounded-2xl bg-surface-2 px-4 text-center text-lg font-semibold outline-none ring-1 ring-line transition placeholder:font-normal placeholder:text-subtle focus:ring-2 focus:ring-primary"
         />
-        <div className="mb-5 flex justify-center gap-1">
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-muted">Ta couleur</p>
+        <div className="mb-6 flex justify-center gap-1.5">
           {COLORS.map((c) => (
-            <button
-              type="button"
-              key={c}
-              onClick={() => setColor(c)}
-              className="flex h-11 w-11 items-center justify-center transition active:scale-90"
-              aria-label={c}
-            >
-              <span
-                className={`h-8 w-8 rounded-full transition ${COLOR_CLASSES[c].bg} ${
-                  color === c ? `ring-2 ring-offset-2 ${COLOR_CLASSES[c].ring}` : ""
-                }`}
-              />
+            <button type="button" key={c} onClick={() => setColor(c)} className="flex size-11 items-center justify-center transition active:scale-90" aria-label={c} aria-pressed={color === c}>
+              <span className={`${SWATCH[c]} flex size-9 items-center justify-center rounded-full bg-tone-bg text-tone-ink transition ${color === c ? "ring-2 ring-primary ring-offset-2 ring-offset-surface" : ""}`}>
+                {color === c && <Icon name="check" size={18} />}
+              </span>
             </button>
           ))}
         </div>
-        <button
-          type="submit"
-          disabled={!name.trim()}
-          className="w-full rounded-xl bg-blush-500 py-3 font-bold text-white transition active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
-        >
+        <Button type="submit" size="lg" block disabled={!name.trim()}>
           C&apos;est parti
-        </button>
+        </Button>
       </form>
     </div>
   );
