@@ -63,7 +63,3 @@ export const MOCK: Record<SpaceType, MockSpace> = {
     ],
   },
 };
-
-export function previewEnabled(): boolean {
-  return process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_ENABLE_PREVIEW === "1";
-}

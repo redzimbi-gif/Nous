@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/shell/AppShell";
-import { MOCK, previewEnabled } from "@/lib/mock";
+import { MOCK } from "@/lib/mock";
+import { previewEnabled } from "@/lib/preview";
 import { isSpaceType, SPACE_TYPES } from "@/lib/types";
 import { buildNavigation, resolveModules } from "@/modules/registry";
 

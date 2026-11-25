@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Card } from "@/components/ui/Card";
-import { previewEnabled } from "@/lib/mock";
+import { previewEnabled } from "@/lib/preview";
 import { SPACE_TYPE_INFO } from "@/lib/theme";
 import { SPACE_TYPES } from "@/lib/types";
 

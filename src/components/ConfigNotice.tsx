@@ -1,5 +1,7 @@
+import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
+import { previewEnabled } from "@/lib/preview";
 
 export function ConfigNotice() {
   return (
@@ -13,6 +15,13 @@ export function ConfigNotice() {
           Renseigne <code className="rounded bg-surface-2 px-1">NEXT_PUBLIC_SUPABASE_URL</code> et{" "}
           <code className="rounded bg-surface-2 px-1">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> (voir <code className="rounded bg-surface-2 px-1">.env.example</code>), puis relance l&apos;application.
         </p>
+        {previewEnabled() && (
+          <div className="pt-2">
+            <ButtonLink href="/preview" block>
+              Voir l&apos;aperçu de l&apos;interface
+            </ButtonLink>
+          </div>
+        )}
       </Card>
     </main>
   );
