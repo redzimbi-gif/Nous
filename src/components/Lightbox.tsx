@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { cn } from "@/lib/cn";
 import type { PhotoRow } from "@/lib/types";
 
 const roundButton = "flex size-11 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition active:scale-90";
+const pillButton = "flex h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold transition active:scale-95";
 
 export default function Lightbox({
   photo,
@@ -15,6 +17,8 @@ export default function Lightbox({
   hasNext,
   onClose,
   onDelete,
+  onAddToAlbum,
+  onRemoveFromAlbum,
   onPrev,
   onNext,
 }: {
@@ -25,12 +29,19 @@ export default function Lightbox({
   hasPrev: boolean;
   hasNext: boolean;
   onClose: () => void;
-  /** Absent dans le chat : on n'y supprime pas la photo de l'album. */
+  /** Absent dans le chat et dans un album : on n'y supprime pas la photo de l'album commun. */
   onDelete?: () => void;
+  onAddToAlbum?: () => void;
+  onRemoveFromAlbum?: () => void;
   onPrev: () => void;
   onNext: () => void;
 }) {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  useEffect(() => {
+    setConfirmDelete(false);
+  }, [photo.id]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -117,26 +128,42 @@ export default function Lightbox({
 
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt="" onClick={(e) => e.stopPropagation()} className="max-h-[72vh] max-w-full rounded-2xl object-contain" />
+        <img src={url} alt="" onClick={(e) => e.stopPropagation()} className="max-h-[68vh] max-w-full rounded-2xl object-contain" />
       ) : (
         <div className="size-40 animate-pulse rounded-2xl bg-white/10" />
       )}
 
-      <div className="mt-5 flex w-full max-w-xs items-center justify-between gap-3" onClick={(e) => e.stopPropagation()}>
+      <div className="mt-5 flex w-full max-w-sm flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
         <p className="text-sm text-white/75">
           <span className="font-bold text-white">{photo.sender_name}</span> ·{" "}
           {new Date(photo.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
         </p>
-        {onDelete && (
-          <button
-            type="button"
-            onClick={onDelete}
-            className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-danger-soft px-4 text-sm font-bold text-danger transition active:scale-95"
-            aria-label="Supprimer la photo"
-          >
-            <Icon name="trash" size={17} />
-            Supprimer
-          </button>
+        {(onAddToAlbum || onRemoveFromAlbum || onDelete) && (
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {onAddToAlbum && (
+              <button type="button" onClick={onAddToAlbum} className={cn(pillButton, "bg-white/15 text-white backdrop-blur")}>
+                <Icon name="album" size={17} />
+                Album
+              </button>
+            )}
+            {onRemoveFromAlbum && (
+              <button type="button" onClick={onRemoveFromAlbum} className={cn(pillButton, "bg-white/15 text-white backdrop-blur")}>
+                <Icon name="x" size={17} />
+                Retirer de l&apos;album
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => (confirmDelete ? onDelete() : setConfirmDelete(true))}
+                className={cn(pillButton, confirmDelete ? "bg-danger text-primary-on" : "bg-danger-soft text-danger")}
+                aria-label={confirmDelete ? "Confirmer la suppression de la photo" : "Supprimer la photo"}
+              >
+                <Icon name="trash" size={17} />
+                {confirmDelete ? "Confirmer" : "Supprimer"}
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

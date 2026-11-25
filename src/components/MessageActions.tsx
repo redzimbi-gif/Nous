@@ -27,6 +27,8 @@ export default function MessageActions({
   onCopy,
   onToggleSaved,
   onSendToTodo,
+  canSaveToArmoire,
+  onSaveToArmoire,
 }: {
   message: MessageRow | null;
   preview: string;
@@ -35,6 +37,8 @@ export default function MessageActions({
   onCopy: () => void;
   onToggleSaved: () => void;
   onSendToTodo: () => void;
+  canSaveToArmoire: boolean;
+  onSaveToArmoire: () => void;
 }) {
   return (
     <Sheet open={!!message} onClose={onClose} title="Ce message">
@@ -51,6 +55,7 @@ export default function MessageActions({
             hint={message.saved ? undefined : "Pour le retrouver facilement"}
             onClick={onToggleSaved}
           />
+          {canSaveToArmoire && <ActionRow icon={icon("archive")} label="Enregistrer dans l'armoire" hint="Lien ou photo, rangé par catégorie" onClick={onSaveToArmoire} />}
           {message.content && <ActionRow icon={icon("tasks")} label="Envoyer vers À faire" onClick={onSendToTodo} />}
         </div>
       )}

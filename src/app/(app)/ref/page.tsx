@@ -1,193 +1,104 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase, REFS_BUCKET } from "@/lib/supabase";
-import { getCachedSignedUrls, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
-import { useIdentity } from "@/lib/identity";
-import type { RefRow } from "@/lib/types";
-import RefModal, { type RefFormValues } from "@/components/RefModal";
-import RefDetail from "@/components/RefDetail";
+import Link from "next/link";
+import { useMemo } from "react";
+import RefThumb from "@/components/refs/RefThumb";
+import { useRefDialogs } from "@/components/refs/useRefDialogs";
 import { Button } from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useIdentity } from "@/lib/identity";
+import { REF_CATEGORIES, categoryInfo, refCategory, shortDate } from "@/lib/refs";
+import { useRefs } from "@/lib/useRefs";
 
 export default function RefPage() {
   const { name } = useIdentity();
-  const [items, setItems] = useState<RefRow[]>([]);
-  const [urls, setUrls] = useState<Record<string, string>>({});
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<RefRow | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [selected, setSelected] = useState<RefRow | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const refs = useRefs(name);
+  const { open, openNew, dialogs } = useRefDialogs(refs);
 
-  async function load() {
-    const { data } = await supabase
-      .from("refs")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (!data) return;
-    setItems(data);
-    setLoaded(true);
-    const paths = data.map((r) => r.media_path).filter(Boolean) as string[];
-    if (paths.length) {
-      const map = await getCachedSignedUrls(REFS_BUCKET, paths, LONG_TTL_SECONDS);
-      setUrls((prev) => ({ ...prev, ...map }));
-    }
-  }
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  async function handleSave(values: RefFormValues) {
-    setSaving(true);
-    let media_path: string | null = editing?.media_path ?? null;
-    let media_type: "image" | "video" | null = editing?.media_type ?? null;
-
-    if ((values.removeMedia || values.file) && editing?.media_path) {
-      await supabase.storage.from(REFS_BUCKET).remove([editing.media_path]);
-      media_path = null;
-      media_type = null;
-    }
-
-    if (values.file) {
-      media_type = values.file.type.startsWith("video/") ? "video" : "image";
-      const path = `${crypto.randomUUID()}-${values.file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from(REFS_BUCKET)
-        .upload(path, values.file, { cacheControl: "604800" });
-      if (uploadError) {
-        alert("Fichier non envoyé : " + uploadError.message);
-        setSaving(false);
-        return;
-      }
-      media_path = path;
-    }
-
-    if (editing) {
-      const { error } = await supabase
-        .from("refs")
-        .update({
-          title: values.title,
-          link: values.link || null,
-          media_path,
-          media_type,
-        })
-        .eq("id", editing.id);
-      setSaving(false);
-      if (error) {
-        alert("Ref non modifiée : " + error.message);
-        return;
-      }
-    } else {
-      const { error } = await supabase.from("refs").insert({
-        title: values.title,
-        link: values.link || null,
-        media_path,
-        media_type,
-        created_by: name,
-      });
-      setSaving(false);
-      if (error) {
-        alert("Ref non ajoutée : " + error.message);
-        return;
-      }
-    }
-
-    setModalOpen(false);
-    setEditing(null);
-    setSelected(null);
-    load();
-  }
-
-  async function handleDelete() {
-    if (!selected) return;
-    if (selected.media_path) {
-      await supabase.storage.from(REFS_BUCKET).remove([selected.media_path]);
-    }
-    await supabase.from("refs").delete().eq("id", selected.id);
-    setSelected(null);
-    load();
-  }
-
-  function openNew() {
-    setEditing(null);
-    setModalOpen(true);
-  }
+  const counts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const ref of refs.items) map[refCategory(ref)] = (map[refCategory(ref)] ?? 0) + 1;
+    return map;
+  }, [refs.items]);
+  const latest = refs.items.slice(0, 5);
 
   return (
     <div className="h-full overflow-y-auto px-5 pb-6">
       <PageHeading
         title="Armoire à réfs"
-        subtitle={loaded && items.length > 0 ? `${items.length} réf${items.length > 1 ? "s" : ""} à garder sous la main` : "Vos idées, liens et inspirations"}
+        subtitle="Une bibliothèque collective pour garder tout ce que vous voulez retrouver."
         action={
-          <Button onClick={openNew} className="shrink-0">
+          <Button onClick={() => openNew()} className="shrink-0">
             <Icon name="plus" size={18} strokeWidth={2.2} />
             Ajouter
           </Button>
         }
       />
 
-      {!loaded ? (
-        <div className="grid grid-cols-2 gap-3" aria-hidden="true">
-          {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} className="aspect-[4/5] rounded-3xl" />
-          ))}
-        </div>
-      ) : items.length === 0 ? (
-        <EmptyState icon="bookmark" title="L'armoire est vide" action={<Button onClick={openNew}>Ajouter la première réf</Button>}>
-          Un resto, une idée de week-end, un lien à ne pas perdre : rangez-le ici, puis envoyez-le dans le chat quand vous voulez.
-        </EmptyState>
-      ) : (
-        <ul className="grid grid-cols-2 gap-3">
-          {items.map((item) => (
-            <li key={item.id}>
-              <button type="button" onClick={() => setSelected(item)} className="block w-full overflow-hidden rounded-3xl bg-surface text-left shadow-card ring-1 ring-line transition active:scale-[0.97]">
-                <div className="flex aspect-square items-center justify-center bg-tint text-tint-ink">
-                  {item.media_path && item.media_type === "image" && urls[item.media_path] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={urls[item.media_path]} alt="" className="h-full w-full object-cover" />
-                  ) : item.media_path && item.media_type === "video" ? (
-                    <Icon name="video" size={34} />
-                  ) : (
-                    <Icon name={item.media_path ? "photo" : "link"} size={34} />
-                  )}
-                </div>
-                <p className="truncate px-3.5 py-3 font-display text-[15px] font-semibold">{item.title}</p>
-              </button>
-            </li>
-          ))}
-        </ul>
+      <section aria-label="Catégories">
+        <h2 className="mb-2.5 font-display text-lg font-semibold">Catégories</h2>
+        {!refs.loaded ? (
+          <div className="space-y-2.5" aria-hidden="true">
+            {Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} className="h-[72px] rounded-3xl" />
+            ))}
+          </div>
+        ) : (
+          <ul className="space-y-2.5">
+            {REF_CATEGORIES.map((c) => (
+              <li key={c.value}>
+                <Link href={`/ref/${c.value}`} className="block">
+                  <Card className="flex items-center gap-3.5 p-3.5 transition active:scale-[0.99]">
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-tint text-tint-ink">
+                      <Icon name={c.icon} size={23} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-display text-[17px] font-semibold leading-tight">{c.label}</span>
+                      <span className="block truncate text-[13px] text-muted">{c.description}</span>
+                    </span>
+                    <span className="min-w-7 rounded-full bg-tint/70 px-2 py-0.5 text-center text-xs font-bold text-tint-ink">{counts[c.value] ?? 0}</span>
+                    <Icon name="chevronRight" size={18} className="shrink-0 text-subtle" />
+                  </Card>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <p className="mt-5 flex items-start gap-3 rounded-2xl bg-tint/60 px-4 py-3 text-[14px] leading-snug text-tint-ink">
+        <Icon name="bulb" size={20} className="mt-0.5 shrink-0" />
+        <span>En un geste : dans le chat, touchez un message qui contient un lien ou une photo, puis « Enregistrer dans l&apos;armoire ».</span>
+      </p>
+
+      {latest.length > 0 && (
+        <section aria-label="Derniers ajouts" className="mt-6">
+          <h2 className="mb-2.5 font-display text-lg font-semibold">Derniers ajouts</h2>
+          <ul className="space-y-2.5">
+            {latest.map((item) => (
+              <li key={item.id}>
+                <button type="button" onClick={() => open(item)} className="flex w-full items-center gap-3 rounded-3xl bg-surface p-3 text-left shadow-card ring-1 ring-line transition active:scale-[0.99]">
+                  <RefThumb item={item} mediaUrl={item.media_path ? refs.urls[item.media_path] : undefined} className="size-14" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-display text-base font-semibold">{item.title}</span>
+                    <span className="mt-0.5 flex items-center gap-2 text-[13px] text-muted">
+                      <span className="rounded-full bg-tint px-2 py-0.5 text-xs font-bold text-tint-ink">{categoryInfo(refCategory(item)).label}</span>
+                      <span className="truncate">
+                        {item.created_by} · {shortDate(item.created_at)}
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
-      {modalOpen && (
-        <RefModal
-          initial={editing ?? undefined}
-          existingMediaUrl={editing?.media_path ? urls[editing.media_path] : undefined}
-          onClose={() => {
-            setModalOpen(false);
-            setEditing(null);
-          }}
-          onSave={handleSave}
-          saving={saving}
-        />
-      )}
-
-      {selected && !modalOpen && (
-        <RefDetail
-          item={selected}
-          url={selected.media_path ? urls[selected.media_path] : undefined}
-          onClose={() => setSelected(null)}
-          onEdit={() => {
-            setEditing(selected);
-            setModalOpen(true);
-          }}
-          onDelete={handleDelete}
-        />
-      )}
+      {dialogs}
     </div>
   );
 }

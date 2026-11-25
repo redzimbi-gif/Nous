@@ -1,64 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import PhotoGrid from "@/components/photos/PhotoGrid";
 import { Sheet } from "@/components/ui/Sheet";
-import { getCachedSignedUrls, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
-import { PHOTOS_BUCKET, supabase } from "@/lib/supabase";
+import { useAlbums } from "@/lib/albums";
+import { cn } from "@/lib/cn";
 import type { PhotoRow } from "@/lib/types";
 
-const LIMIT = 90;
-
-function PhotoGrid({ onSelect }: { onSelect: (photo: PhotoRow) => void }) {
-  const [items, setItems] = useState<PhotoRow[]>([]);
-  const [urls, setUrls] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    supabase
-      .from("photos")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(LIMIT)
-      .then(async ({ data }) => {
-        if (!active) return;
-        setItems(data ?? []);
-        setLoading(false);
-        if (data?.length) {
-          const map = await getCachedSignedUrls(
-            PHOTOS_BUCKET,
-            data.map((p) => p.storage_path),
-            LONG_TTL_SECONDS,
-          );
-          if (active) setUrls(map);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  if (loading) return <p className="py-10 text-center text-sm text-muted">Chargement…</p>;
-  if (items.length === 0) return <p className="py-10 text-center text-sm text-muted">Aucune photo dans l&apos;album pour l&apos;instant.</p>;
+function Body({ onSelect }: { onSelect: (photo: PhotoRow) => void }) {
+  const { albums, photoIdsByAlbum } = useAlbums();
+  const [albumId, setAlbumId] = useState<string | null>(null);
+  const withPhotos = albums.filter((a) => (photoIdsByAlbum[a.id]?.length ?? 0) > 0);
+  const chip = (active: boolean) => cn("h-9 shrink-0 rounded-full px-4 text-sm font-semibold transition active:scale-95", active ? "bg-primary text-primary-on shadow-press" : "bg-tint text-tint-ink");
 
   return (
-    <div className="grid grid-cols-3 gap-1.5 px-2 pb-2">
-      {items.map((photo) => (
-        <button key={photo.id} type="button" onClick={() => onSelect(photo)} className="aspect-square overflow-hidden rounded-2xl bg-tint transition active:scale-95" aria-label={`Photo de ${photo.sender_name}`}>
-          {urls[photo.storage_path] && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={urls[photo.storage_path]} alt="" className="h-full w-full object-cover" />
-          )}
-        </button>
-      ))}
-    </div>
+    <>
+      {withPhotos.length > 0 && (
+        <div role="group" aria-label="Filtrer par album" className="mb-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button type="button" aria-pressed={albumId === null} className={chip(albumId === null)} onClick={() => setAlbumId(null)}>
+            Toutes
+          </button>
+          {withPhotos.map((album) => (
+            <button key={album.id} type="button" aria-pressed={albumId === album.id} className={chip(albumId === album.id)} onClick={() => setAlbumId(album.id)}>
+              {album.name}
+            </button>
+          ))}
+        </div>
+      )}
+      <PhotoGrid mode="send" albumId={albumId} onPick={onSelect} />
+    </>
   );
 }
 
+/** « Photos de Nous » : toute la bibliothèque (défilement), ou un album. Toucher une photo l'envoie. */
 export default function PhotoPicker({ open, onClose, onSelect }: { open: boolean; onClose: () => void; onSelect: (photo: PhotoRow) => void }) {
   return (
-    <Sheet open={open} onClose={onClose} title="Photos de Nous">
-      {open && <PhotoGrid onSelect={onSelect} />}
+    <Sheet open={open} onClose={onClose} title="Photos de Nous" tall>
+      {open && <Body onSelect={onSelect} />}
     </Sheet>
   );
 }

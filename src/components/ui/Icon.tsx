@@ -193,6 +193,34 @@ const ICONS = {
     </>
   ),
   bookmark: <path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z" />,
+  utensils: (
+    <>
+      <path d="M7 3v6.500a2.500 2.500 0 0 0 5 0V3M9.500 3v18" />
+      <path d="M17 21V3c-2.200 1.200-3.500 3.600-3.500 7 0 2.200 1.200 3.500 3.500 3.500" />
+    </>
+  ),
+  music: (
+    <>
+      <path d="M9 18V6l10-2v12" />
+      <circle cx="6.500" cy="18" r="2.500" />
+      <circle cx="16.500" cy="16" r="2.500" />
+    </>
+  ),
+  file: (
+    <>
+      <path d="M7 3.500h6.500L18 8v12.500H7z" />
+      <path d="M13.500 3.500V8H18M9.500 13h5M9.500 16.500h5" />
+    </>
+  ),
+  plane: <path d="M21 4L10.500 14.500M21 4l-6.500 17-4-6.500L4 10.500z" />,
+  more: (
+    <>
+      <circle cx="5.500" cy="12" r="1.600" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.600" fill="currentColor" />
+      <circle cx="18.500" cy="12" r="1.600" fill="currentColor" />
+    </>
+  ),
+  external: <path d="M14 4h6v6M20 4l-8 8M18 14v5a1.500 1.500 0 0 1-1.500 1.500h-11A1.500 1.500 0 0 1 4 19V8a1.500 1.500 0 0 1 1.500-1.500H10" />,
   upload: <path d="M12 16V4M7.500 8.500L12 4l4.500 4.500M5 14v4.500A1.500 1.500 0 0 0 6.500 20h11a1.500 1.500 0 0 0 1.500-1.500V14" />,
 } satisfies Record<string, ReactNode>;
 

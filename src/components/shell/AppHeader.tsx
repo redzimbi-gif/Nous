@@ -79,9 +79,9 @@ export default function AppHeader() {
         </button>
       </header>
 
-      <MoodSheet open={sheet === "mood"} onClose={() => setSheet(null)} />
+      <MoodSheet open={sheet === "mood"} onClose={() => setSheet((s) => (s === "mood" ? null : s))} />
 
-      <Sheet open={sheet === "menu"} onClose={() => setSheet(null)} title="Menu">
+      <Sheet open={sheet === "menu"} onClose={() => setSheet((s) => (s === "menu" ? null : s))} title="Menu">
         <div className="mb-2 flex items-center gap-3 rounded-3xl bg-bg p-3">
           <Avatar name={me.name} tone={me.tone} size="md" />
           <div className="min-w-0">

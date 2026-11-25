@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import Linkified from "@/components/Linkified";
+import RefCard from "@/components/refs/RefCard";
 import VoiceMessage from "@/components/VoiceMessage";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
@@ -123,8 +125,7 @@ export default function MessageBubble({
     };
   }, [refItem]);
 
-  const refIsMedia = !!(refItem?.media_path && !refItem.link);
-  const wide = !!(photo || message.photo_id || pendingKind === "photo" || refIsMedia);
+  const wide = !!(photo || message.photo_id || pendingKind === "photo" || refItem?.media_path || refItem?.link);
   const interactive = !status;
 
   return (
@@ -210,22 +211,7 @@ export default function MessageBubble({
 
         {message.ref_id &&
           (refItem ? (
-            refIsMedia ? (
-              refMediaUrl ? (
-                refItem.media_type === "video" ? (
-                  <video src={refMediaUrl} controls playsInline onClick={(e) => e.stopPropagation()} className="mb-1.5 h-56 w-full rounded-2xl object-cover" />
-                ) : (
-                  <button type="button" onClick={(e) => { e.stopPropagation(); onOpenRef(refItem); }} className="mb-1.5 block w-full overflow-hidden rounded-2xl" aria-label={`Ouvrir la réf ${refItem.title}`}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={refMediaUrl} alt="" className="h-56 w-full object-cover" />
-                  </button>
-                )
-              ) : (
-                <div className="mb-1.5 h-56 w-full animate-pulse rounded-2xl bg-ink/10" />
-              )
-            ) : (
-              <AttachmentRow icon="link" title={refItem.title} hint="Ouvrir la réf" onClick={() => onOpenRef(refItem)} />
-            )
+            <RefCard item={refItem} mediaUrl={refMediaUrl} onOpen={() => onOpenRef(refItem)} />
           ) : refState === "deleted" ? (
             <AttachmentRow icon="bookmark" title="Réf supprimée" hint="Elle n'est plus dans l'armoire" muted />
           ) : (
@@ -234,7 +220,11 @@ export default function MessageBubble({
 
         {message.audio_path && <VoiceMessage path={message.audio_path} />}
 
-        {message.content && <p className="whitespace-pre-wrap break-words">{message.content}</p>}
+        {message.content && (
+          <p className="whitespace-pre-wrap break-words">
+            <Linkified text={message.content} />
+          </p>
+        )}
 
         {message.saved && (
           <span aria-label="Dans les canards" role="img" className={cn("absolute -bottom-2.5 rounded-full bg-surface px-1.5 py-0.5 text-xs leading-none shadow-card ring-1 ring-line", isMine ? "right-3" : "left-3")}>

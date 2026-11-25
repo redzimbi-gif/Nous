@@ -105,6 +105,21 @@ export type ChatReadRow = {
   last_read_at: string;
 };
 
+export type RefCategory = "references" | "restaurants" | "activites" | "voyages" | "musique" | "videos" | "inspirations" | "documents";
+
+/** Aperçu d'un lien (titre, description, image du site), mémorisé dans la réf après la première lecture. */
+export type LinkPreview = {
+  url: string;
+  title: string | null;
+  description: string | null;
+  image: string | null;
+  site: string | null;
+  host: string;
+  fetched_at: string;
+  /** false : le site n'a rien donné d'exploitable (bloqué, pas de balises) ; on réessaiera plus tard. */
+  ok: boolean;
+};
+
 export type RefRow = {
   id: string;
   title: string;
@@ -113,6 +128,24 @@ export type RefRow = {
   media_type: "image" | "video" | null;
   created_by: string;
   created_at: string;
+  /** Colonnes ajoutées après coup : absentes tant que la migration n'est pas appliquée. */
+  category?: RefCategory | null;
+  note?: string | null;
+  preview?: LinkPreview | null;
+};
+
+export type AlbumRow = {
+  id: string;
+  name: string;
+  created_by: string;
+  created_at: string;
+};
+
+export type AlbumPhotoRow = {
+  album_id: string;
+  photo_id: string;
+  added_by: string | null;
+  added_at: string;
 };
 
 export type CheckersPlayer = "A" | "B";

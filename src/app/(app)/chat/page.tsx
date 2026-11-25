@@ -10,6 +10,7 @@ import MessageBubble, { type Quote, type RefState } from "@/components/MessageBu
 import PhotoPicker from "@/components/PhotoPicker";
 import RefDetail from "@/components/RefDetail";
 import RefPicker from "@/components/RefPicker";
+import SaveToArmoireSheet, { type SaveSource } from "@/components/refs/SaveToArmoireSheet";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -17,6 +18,8 @@ import { dayLabel, isSameDay, previewOf, sameGroup } from "@/lib/chat";
 import { cn } from "@/lib/cn";
 import { useIdentity } from "@/lib/identity";
 import { prepareImage, type PreparedImage } from "@/lib/image";
+import { ensureRefPreview, needsPreview } from "@/lib/linkPreview";
+import { extractUrls } from "@/lib/refs";
 import { sendNotification } from "@/lib/notify";
 import { getCachedSignedUrl, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
 import { EPHEMERAL_BUCKET, PHOTOS_BUCKET, REFS_BUCKET, VOICES_BUCKET, supabase } from "@/lib/supabase";
@@ -63,6 +66,7 @@ export default function ChatPage() {
   const [photoPickerOpen, setPhotoPickerOpen] = useState(false);
   const [viewingRef, setViewingRef] = useState<RefRow | null>(null);
   const [viewingRefUrl, setViewingRefUrl] = useState<string | null>(null);
+  const [saveSource, setSaveSource] = useState<SaveSource | null>(null);
   const [viewingPhoto, setViewingPhoto] = useState<{ photo: PhotoRow; url: string } | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [viewingEphemeral, setViewingEphemeral] = useState<{ message: MessageRow; url: string | null; kind: "image" | "video"; mirrored: boolean } | null>(null);
@@ -227,6 +231,15 @@ export default function ChatPage() {
       .map(([, t]) => new Date(t).getTime());
     return otherTimes.length ? Math.max(...otherTimes) : null;
   }, [reads, name]);
+
+  // Les réfs avec un lien n'ont pas toutes leur aperçu : on le lit une fois, puis il est mémorisé pour tout le monde.
+  useEffect(() => {
+    for (const ref of Object.values(refs).filter(needsPreview).slice(0, 6)) {
+      ensureRefPreview(ref).then((updated) => {
+        if (updated) setRefs((prev) => ({ ...prev, [updated.id]: updated }));
+      });
+    }
+  }, [refs]);
 
   // ---------------------------------------------------------------- citations
 
@@ -675,6 +688,19 @@ export default function ChatPage() {
     }
   }
 
+  function saveToArmoire(message: MessageRow) {
+    setActiveMessage(null);
+    const url = extractUrls(message.content)[0];
+    if (url) {
+      setSaveSource({ kind: "link", url, sender: message.sender_name === name ? "vous" : message.sender_name });
+      return;
+    }
+    const photo = message.photo_id ? photos[message.photo_id] : undefined;
+    if (photo) {
+      getCachedSignedUrl(PHOTOS_BUCKET, photo.storage_path, LONG_TTL_SECONDS).then((signed) => setSaveSource({ kind: "photo", photo, url: signed, sender: message.sender_name === name ? "vous" : message.sender_name }));
+    }
+  }
+
   function startReply(message: MessageRow) {
     setActiveMessage(null);
     setReply(message);
@@ -914,7 +940,11 @@ export default function ChatPage() {
         onCopy={() => activeMessage && copyText(activeMessage)}
         onToggleSaved={() => activeMessage && toggleSaved(activeMessage)}
         onSendToTodo={() => activeMessage && sendToTodo(activeMessage)}
+        canSaveToArmoire={!!activeMessage && (extractUrls(activeMessage.content).length > 0 || (!!activeMessage.photo_id && !!photos[activeMessage.photo_id]))}
+        onSaveToArmoire={() => activeMessage && saveToArmoire(activeMessage)}
       />
+
+      <SaveToArmoireSheet source={saveSource} createdBy={name} onClose={() => setSaveSource(null)} onSaved={showNotice} />
 
       {viewingRef && (
         <RefDetail

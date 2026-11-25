@@ -1,37 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { supabase, PHOTOS_BUCKET } from "@/lib/supabase";
-import { getCachedSignedUrls, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
-import { useIdentity } from "@/lib/identity";
-import type { PhotoRow } from "@/lib/types";
 import Lightbox from "@/components/Lightbox";
+import AddToAlbumSheet from "@/components/photos/AddToAlbumSheet";
+import PhotosTabs from "@/components/photos/PhotosTabs";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
+import { NoticeToast, useNotice } from "@/components/ui/Notice";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { Skeleton } from "@/components/ui/Skeleton";
-
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function dateGroupLabel(date: Date): string {
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
-  if (isSameDay(date, today)) return "Aujourd'hui";
-  if (isSameDay(date, yesterday)) return "Hier";
-  return date.toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
+import { cn } from "@/lib/cn";
+import { dayLabel } from "@/lib/chat";
+import { useIdentity } from "@/lib/identity";
+import { uploadPhotos } from "@/lib/photoUpload";
+import { getCachedSignedUrls, LONG_TTL_SECONDS } from "@/lib/signedUrlCache";
+import { PHOTOS_BUCKET, supabase } from "@/lib/supabase";
+import type { PhotoRow } from "@/lib/types";
 
 type PhotoGroup = {
   key: string;
@@ -46,13 +31,14 @@ export default function PhotosPage() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [albumTarget, setAlbumTarget] = useState<string[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { notice, show } = useNotice();
 
   async function load() {
-    const { data } = await supabase
-      .from("photos")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data } = await supabase.from("photos").select("*").order("created_at", { ascending: false });
     if (!data) return;
     setPhotos(data);
     setLoaded(true);
@@ -76,7 +62,7 @@ export default function PhotosPage() {
       if (last && last.key === key) {
         last.items.push({ photo, index });
       } else {
-        result.push({ key, label: dateGroupLabel(d), items: [{ photo, index }] });
+        result.push({ key, label: dayLabel(d), items: [{ photo, index }] });
       }
     });
     return result;
@@ -84,23 +70,9 @@ export default function PhotosPage() {
 
   async function handleFiles(files: FileList) {
     setUploading(true);
-    for (const file of Array.from(files)) {
-      const path = `${crypto.randomUUID()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from(PHOTOS_BUCKET)
-        .upload(path, file, { cacheControl: "604800" });
-      if (uploadError) {
-        alert("Photo non envoyée : " + uploadError.message);
-        continue;
-      }
-      const { error: insertError } = await supabase
-        .from("photos")
-        .insert({ storage_path: path, sender_name: name });
-      if (insertError) {
-        alert("Photo non enregistrée : " + insertError.message);
-      }
-    }
+    const { errors } = await uploadPhotos(Array.from(files), name);
     setUploading(false);
+    if (errors.length) show(errors[0]);
     load();
   }
 
@@ -112,6 +84,19 @@ export default function PhotosPage() {
     await supabase.storage.from(PHOTOS_BUCKET).remove([photo.storage_path]);
     await supabase.from("photos").delete().eq("id", photo.id);
     load();
+  }
+
+  function toggle(photo: PhotoRow) {
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(photo.id)) next.add(photo.id);
+      return next;
+    });
+  }
+
+  function stopSelecting() {
+    setSelecting(false);
+    setPicked(new Set());
   }
 
   const selected = selectedIndex !== null ? photos[selectedIndex] ?? null : null;
@@ -140,6 +125,20 @@ export default function PhotosPage() {
         }}
       />
 
+      <div className="mb-4 flex items-center gap-3">
+        <PhotosTabs active="photos" />
+        {photos.length > 0 && (
+          <button
+            type="button"
+            onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
+            aria-pressed={selecting}
+            className={cn("h-10 shrink-0 rounded-full px-4 text-sm font-bold transition active:scale-95", selecting ? "bg-primary text-primary-on shadow-press" : "bg-surface text-primary-ink shadow-card ring-1 ring-line")}
+          >
+            {selecting ? "Terminer" : "Sélectionner"}
+          </button>
+        )}
+      </div>
+
       {!loaded ? (
         <div className="grid grid-cols-3 gap-1.5" aria-hidden="true">
           {Array.from({ length: 9 }, (_, i) => (
@@ -155,17 +154,42 @@ export default function PhotosPage() {
           <section key={group.key} className="mb-5" aria-label={group.label}>
             <h2 className="mb-2 font-display text-[15px] font-semibold text-muted">{group.label}</h2>
             <div className="grid grid-cols-3 gap-1.5">
-              {group.items.map(({ photo: p, index: i }) => (
-                <button key={p.id} type="button" onClick={() => setSelectedIndex(i)} className="aspect-square overflow-hidden rounded-2xl bg-tint transition active:scale-95" aria-label={`Photo de ${p.sender_name}`}>
-                  {urls[p.storage_path] && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={urls[p.storage_path]} alt="" className="h-full w-full object-cover" />
-                  )}
-                </button>
-              ))}
+              {group.items.map(({ photo: p, index: i }) => {
+                const isPicked = picked.has(p.id);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => (selecting ? toggle(p) : setSelectedIndex(i))}
+                    aria-pressed={selecting ? isPicked : undefined}
+                    className="relative aspect-square overflow-hidden rounded-2xl bg-tint transition active:scale-95"
+                    aria-label={`Photo de ${p.sender_name}`}
+                  >
+                    {urls[p.storage_path] && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={urls[p.storage_path]} alt="" className={cn("h-full w-full object-cover transition", selecting && isPicked && "scale-95 rounded-xl")} />
+                    )}
+                    {selecting && (
+                      <span className={cn("absolute right-1.5 top-1.5 flex size-6 items-center justify-center rounded-full ring-2 ring-white transition", isPicked ? "bg-primary text-primary-on" : "bg-black/25 text-transparent")}>
+                        <Icon name="check" size={14} strokeWidth={3} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </section>
         ))
+      )}
+
+      {selecting && (
+        <div className="sticky bottom-3 z-10 mt-2 flex items-center gap-2 rounded-full bg-surface p-2 pl-5 shadow-float ring-1 ring-line">
+          <span className="flex-1 text-sm font-semibold">{picked.size === 0 ? "Touchez des photos" : `${picked.size} sélectionnée${picked.size > 1 ? "s" : ""}`}</span>
+          <Button size="sm" disabled={picked.size === 0} onClick={() => setAlbumTarget([...picked])}>
+            <Icon name="album" size={17} />
+            Album
+          </Button>
+        </div>
       )}
 
       {selected && selectedIndex !== null && (
@@ -179,9 +203,21 @@ export default function PhotosPage() {
           onPrev={() => setSelectedIndex((i) => (i !== null ? Math.max(i - 1, 0) : i))}
           onNext={() => setSelectedIndex((i) => (i !== null ? Math.min(i + 1, photos.length - 1) : i))}
           onClose={() => setSelectedIndex(null)}
+          onAddToAlbum={() => setAlbumTarget([selected.id])}
           onDelete={handleDelete}
         />
       )}
+
+      <AddToAlbumSheet
+        open={!!albumTarget}
+        photoIds={albumTarget ?? []}
+        onClose={() => setAlbumTarget(null)}
+        onDone={(message) => {
+          stopSelecting();
+          show(message);
+        }}
+      />
+      <NoticeToast text={notice} />
     </div>
   );
 }
