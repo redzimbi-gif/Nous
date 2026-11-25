@@ -1,220 +1,62 @@
-export type PhotoRow = {
+// Types des lignes lues depuis Supabase (à remplacer par les types générés
+// quand le projet Supabase de la v2 sera créé : `supabase gen types typescript`).
+
+export type SpaceType = "couple" | "amis" | "famille";
+export type Tier = "free" | "plus" | "max";
+export type Tone = "lilac" | "rose" | "sun" | "mint" | "sky" | "peach";
+
+export interface Space {
   id: string;
-  storage_path: string;
-  caption: string | null;
-  sender_name: string;
+  type: SpaceType;
+  name: string;
+  invite_code: string;
+  palette: string;
+  together_since: string | null;
   created_at: string;
-};
+  archived_at: string | null;
+}
 
-export type MessageRow = {
+export interface Member {
   id: string;
-  sender_name: string;
-  content: string | null;
-  photo_id: string | null;
-  ref_id: string | null;
-  audio_path: string | null;
-  ephemeral_path: string | null;
-  ephemeral_type: "image" | "video" | null;
-  ephemeral_viewed_at: string | null;
-  ephemeral_mirrored: boolean;
-  saved: boolean;
-  created_at: string;
-};
+  space_id: string;
+  user_id: string | null;
+  kind: "account" | "supervised";
+  role: "admin" | "member";
+  display_name: string;
+  color: Tone;
+  mood: string | null;
+  simplified: boolean;
+  joined_at: string;
+}
 
-export type EventCategory = "date" | "anniversaire" | "voyage" | "travail" | "sport" | "autre";
+export interface Subscription {
+  space_id: string;
+  tier: Tier;
+  holder_id: string | null;
+  status: "active" | "past_due" | "canceled";
+  current_period_end: string | null;
+}
 
-export type EventRow = {
+export interface Task {
   id: string;
+  space_id: string;
   title: string;
-  description: string | null;
-  event_date: string;
-  event_time: string | null;
-  event_end_time: string | null;
-  all_day: boolean;
-  category: EventCategory;
-  created_by: string;
+  category: string | null;
+  assignee_id: string | null;
+  due_on: string | null;
+  created_by: string | null;
   created_at: string;
-};
+  done_at: string | null;
+  done_by: string | null;
+}
 
-export type TicTacToeGame = {
-  id: string;
-  board: string[];
-  turn: "X" | "O";
-  x_name: string;
-  o_name: string | null;
-  winner: "X" | "O" | "draw" | null;
-  created_at: string;
-};
+export const TONES: Tone[] = ["lilac", "rose", "sun", "mint", "sky", "peach"];
+export const SPACE_TYPES: SpaceType[] = ["couple", "amis", "famille"];
 
-export type TodoCategory =
-  | "important"
-  | "quotidien"
-  | "activites"
-  | "restaurants"
-  | "repas"
-  | "films"
-  | "series"
-  | "voyages";
+export function isTone(value: unknown): value is Tone {
+  return typeof value === "string" && (TONES as string[]).includes(value);
+}
 
-export type TodoRow = {
-  id: string;
-  content: string;
-  done: boolean;
-  category: TodoCategory | null;
-  created_by: string;
-  created_at: string;
-};
-
-export type Mood =
-  | "content"
-  | "amoureux"
-  | "excite"
-  | "calin"
-  | "zen"
-  | "fatigue"
-  | "ennuye"
-  | "affame"
-  | "stresse"
-  | "triste"
-  | "en_colere"
-  | "malade"
-  | "emu"
-  | "clownesque"
-  | "seducteur"
-  | "epuise"
-  | "agace"
-  | "amuse"
-  | "alcoolise";
-
-export type StatusRow = {
-  name: string;
-  mood: Mood;
-  updated_at: string;
-};
-
-export type PresenceRow = {
-  name: string;
-  online: boolean;
-  updated_at: string;
-};
-
-export type ChatReadRow = {
-  name: string;
-  last_read_at: string;
-};
-
-export type RefRow = {
-  id: string;
-  title: string;
-  link: string | null;
-  media_path: string | null;
-  media_type: "image" | "video" | null;
-  created_by: string;
-  created_at: string;
-};
-
-export type CheckersPlayer = "A" | "B";
-
-export type CheckersPiece = {
-  player: CheckersPlayer;
-  king: boolean;
-};
-
-export type CheckersBoard = (CheckersPiece | null)[][];
-
-export type CheckersGame = {
-  id: string;
-  board: CheckersBoard;
-  turn: CheckersPlayer;
-  a_name: string;
-  b_name: string | null;
-  winner: CheckersPlayer | null;
-  created_at: string;
-};
-
-export type ShipCell = { r: number; c: number };
-export type Ship = { cells: ShipCell[] };
-
-export type BattleshipGame = {
-  id: string;
-  a_name: string;
-  b_name: string | null;
-  a_ships: Ship[] | null;
-  b_ships: Ship[] | null;
-  a_ready: boolean;
-  b_ready: boolean;
-  a_shots: ShipCell[];
-  b_shots: ShipCell[];
-  turn: "A" | "B";
-  winner: "A" | "B" | null;
-  created_at: string;
-};
-
-export type UnoColor = "red" | "yellow" | "green" | "blue";
-export type UnoCardColor = UnoColor | "wild";
-export type UnoValue =
-  | "0"
-  | "1"
-  | "2"
-  | "3"
-  | "4"
-  | "5"
-  | "6"
-  | "7"
-  | "8"
-  | "9"
-  | "skip"
-  | "reverse"
-  | "draw2"
-  | "wild"
-  | "wild4";
-
-export type UnoCard = {
-  id: string;
-  color: UnoCardColor;
-  value: UnoValue;
-};
-
-export type UnoGame = {
-  id: string;
-  a_name: string;
-  b_name: string | null;
-  hand_a: UnoCard[];
-  hand_b: UnoCard[];
-  draw_pile: UnoCard[];
-  discard_pile: UnoCard[];
-  active_color: UnoColor;
-  turn: "A" | "B";
-  winner: "A" | "B" | null;
-  created_at: string;
-};
-
-export type Connect4Player = "A" | "B";
-export type Connect4Cell = Connect4Player | null;
-export type Connect4Board = Connect4Cell[][];
-
-export type Connect4Game = {
-  id: string;
-  board: Connect4Board;
-  turn: Connect4Player;
-  a_name: string;
-  b_name: string | null;
-  winner: Connect4Player | "draw" | null;
-  created_at: string;
-};
-
-export type GuessWordAttempt = {
-  word: string;
-  by: "A" | "B";
-};
-
-export type GuessWordGame = {
-  id: string;
-  word: string;
-  guesses: GuessWordAttempt[];
-  turn: "A" | "B";
-  a_name: string;
-  b_name: string | null;
-  winner: "A" | "B" | "draw" | null;
-  created_at: string;
-};
+export function isSpaceType(value: unknown): value is SpaceType {
+  return typeof value === "string" && (SPACE_TYPES as string[]).includes(value);
+}

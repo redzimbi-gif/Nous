@@ -1,28 +1,32 @@
 {
   "name": "nous",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:test": "bash supabase/tests/run.sh"
   },
   "dependencies": {
+    "@fontsource-variable/fredoka": "^5.2.0",
+    "@fontsource-variable/nunito": "^5.2.0",
+    "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.45.4",
     "next": "16.3.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "web-push": "^3.6.7"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.9",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.4",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "vitest": "^3.2.4"
   }
 }

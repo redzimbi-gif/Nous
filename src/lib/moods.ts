@@ -1,6 +1,4 @@
-import type { Mood } from "@/lib/types";
-
-export const MOODS: { value: Mood; emoji: string; label: string }[] = [
+export const MOODS = [
   { value: "content", emoji: "😊", label: "Content" },
   { value: "amoureux", emoji: "🥰", label: "Amoureux" },
   { value: "excite", emoji: "🤩", label: "Excité" },
@@ -20,12 +18,18 @@ export const MOODS: { value: Mood; emoji: string; label: string }[] = [
   { value: "agace", emoji: "😤", label: "Agacé" },
   { value: "amuse", emoji: "🤭", label: "Amusé" },
   { value: "alcoolise", emoji: "🥴", label: "Alcoolisé" },
-];
+] as const;
 
-export function moodEmoji(mood: string | undefined | null): string {
-  return MOODS.find((m) => m.value === mood)?.emoji ?? "🙂";
+export type MoodValue = (typeof MOODS)[number]["value"];
+
+export function isMood(value: unknown): value is MoodValue {
+  return MOODS.some((m) => m.value === value);
 }
 
-export function moodLabel(mood: string | undefined | null): string {
-  return MOODS.find((m) => m.value === mood)?.label ?? "Pas de statut";
+export function moodEmoji(value: string | null | undefined): string | null {
+  return MOODS.find((m) => m.value === value)?.emoji ?? null;
+}
+
+export function moodLabel(value: string | null | undefined): string | null {
+  return MOODS.find((m) => m.value === value)?.label ?? null;
 }

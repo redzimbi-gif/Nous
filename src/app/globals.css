@@ -2,20 +2,169 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body {
-  height: 100%;
+/* ------------------------------------------------------------------
+   Palettes sémantiques. Valeurs en canaux « R G B » pour que Tailwind
+   puisse appliquer l'opacité (bg-primary/10, etc.).
+   Couple = les couleurs historiques de Nous. Amis et Famille reprennent
+   les palettes validées dans la maquette.
+   ------------------------------------------------------------------ */
+:root,
+[data-space-type="couple"] {
+  --bg: 255 250 243;
+  --surface: 255 255 255;
+  --surface-2: 247 241 251;
+  --ink: 63 31 84;
+  --muted: 91 74 87;
+  --subtle: 125 107 112;
+  --primary: 143 82 186;
+  --on-primary: 255 255 255;
+  --primary-ink: 118 63 156;
+  --tint: 236 220 247;
+  --on-tint: 77 37 104;
+  --accent: 240 82 111;
+  --warm: 255 233 236;
+  --on-warm: 149 38 60;
+  --ok: 227 244 234;
+  --on-ok: 29 91 58;
+  --danger: 149 38 60;
+  --danger-soft: 255 233 236;
+}
+
+[data-space-type="amis"] {
+  --bg: 255 247 236;
+  --surface: 255 255 255;
+  --surface-2: 255 238 221;
+  --ink: 58 29 13;
+  --muted: 106 75 60;
+  --subtle: 125 101 88;
+  --primary: 249 115 22;
+  --on-primary: 43 20 5;
+  --primary-ink: 179 71 0;
+  --tint: 255 241 191;
+  --on-tint: 107 75 0;
+  --accent: 255 127 107;
+  --warm: 255 225 220;
+  --on-warm: 138 42 27;
+  --ok: 227 244 234;
+  --on-ok: 29 91 58;
+  --danger: 138 42 27;
+  --danger-soft: 255 225 220;
+}
+
+[data-space-type="famille"] {
+  --bg: 245 248 240;
+  --surface: 255 255 255;
+  --surface-2: 232 239 227;
+  --ink: 31 59 46;
+  --muted: 74 95 85;
+  --subtle: 95 113 104;
+  --primary: 79 122 90;
+  --on-primary: 255 255 255;
+  --primary-ink: 63 106 74;
+  --tint: 228 238 223;
+  --on-tint: 47 90 58;
+  --accent: 124 154 109;
+  --warm: 255 227 207;
+  --on-warm: 107 52 16;
+  --ok: 228 238 223;
+  --on-ok: 47 90 58;
+  --danger: 138 42 27;
+  --danger-soft: 251 230 225;
+}
+
+/* Teintes des avatars, indépendantes de la palette de l'espace. */
+.tone-lilac { --tone-bg: 220 189 239; --tone-ink: 63 31 84; }
+.tone-rose  { --tone-bg: 255 209 217; --tone-ink: 124 36 54; }
+.tone-sun   { --tone-bg: 255 241 214; --tone-ink: 107 67 0; }
+.tone-mint  { --tone-bg: 227 244 234; --tone-ink: 29 91 58; }
+.tone-sky   { --tone-bg: 227 238 249; --tone-ink: 31 74 122; }
+.tone-peach { --tone-bg: 255 227 207; --tone-ink: 107 52 16; }
+
+/* ------------------------------------------------------------------ Base */
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  background: rgb(var(--bg));
 }
 
 body {
-  background: #fff5f6;
-  color: #3b2430;
+  min-height: 100dvh;
+  background: rgb(var(--bg));
+  color: rgb(var(--ink));
+  font-feature-settings: "ss01", "cv11";
+  text-rendering: optimizeLegibility;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
+h1,
+h2,
+h3 {
+  font-family: "Fredoka Variable", "Fredoka", ui-rounded, system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
-::-webkit-scrollbar-thumb {
-  background: #ffd1d9;
-  border-radius: 999px;
+
+button,
+a,
+input,
+textarea,
+select {
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--primary));
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+::selection {
+  background: rgb(var(--tint));
+}
+
+/* Halo de couleur discret en haut de page : donne de la profondeur sans bruit. */
+.page-glow {
+  background:
+    radial-gradient(70% 38% at 50% -6%, rgb(var(--tint) / 0.75), transparent 72%),
+    radial-gradient(50% 30% at 100% 0%, rgb(var(--accent) / 0.10), transparent 70%);
+}
+
+/* ------------------------------------------------------- Feuille (dialog) */
+dialog.sheet {
+  margin: auto auto 0 auto;
+  width: min(100%, 480px);
+  max-width: 100%;
+  max-height: 88dvh;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  overflow: visible;
+}
+
+dialog.sheet::backdrop {
+  background: rgb(var(--ink) / 0.38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fade 0.25s ease-out both;
+}
+
+dialog.sheet[open] .sheet-panel {
+  animation: sheet-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Défilement discret. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--ink) / 0.18) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
