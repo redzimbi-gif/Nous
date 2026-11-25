@@ -119,7 +119,8 @@ export default function AgendaPage() {
 
   const current = parseISODate(selected);
   const dayEvents = byDate[selected] ?? [];
-  const dayTitle = current.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  const dayText = current.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  const dayTitle = dayText.charAt(0).toUpperCase() + dayText.slice(1);
   const Navigator = mode === "week" ? WeekStrip : MonthGrid;
 
   return (
@@ -169,7 +170,7 @@ export default function AgendaPage() {
 
       <section className="space-y-3 px-5 pt-5" aria-label={dayTitle}>
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-body text-[15px] font-semibold capitalize text-muted">{dayTitle}</h2>
+          <h2 className="font-body text-[15px] font-semibold text-muted">{dayTitle}</h2>
           {selected !== today && (
             <button type="button" onClick={() => setSelected(today)} className="rounded-full bg-tint px-3 py-1 text-xs font-bold text-tint-ink transition active:scale-95">
               Aujourd&apos;hui
